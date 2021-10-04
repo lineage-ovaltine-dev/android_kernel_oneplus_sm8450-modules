@@ -20,7 +20,6 @@
 #ifndef __SDE_KMS_H__
 #define __SDE_KMS_H__
 
-#include <linux/msm_ion.h>
 #include <linux/pm_domain.h>
 #include <linux/pm_qos.h>
 
