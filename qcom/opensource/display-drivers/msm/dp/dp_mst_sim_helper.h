@@ -1,4 +1,5 @@
 /*
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2019-2021, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -38,7 +39,11 @@
 #define _DP_MST_SIM_HELPER_H_
 
 #include <linux/types.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_helper.h>
+#else
 #include <drm/drm_dp_helper.h>
+#endif
 
 /**
  * struct dp_mst_sim_port - MST port configuration

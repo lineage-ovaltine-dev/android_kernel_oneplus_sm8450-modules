@@ -17,9 +17,14 @@
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/debugfs.h>
+#include <linux/version.h>
 #include <linux/platform_device.h>
 #include <drm/drm_edid.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_helper.h>
+#else
 #include <drm/drm_dp_helper.h>
+#endif
 #include "dp_debug.h"
 #include "dp_mst_sim.h"
 

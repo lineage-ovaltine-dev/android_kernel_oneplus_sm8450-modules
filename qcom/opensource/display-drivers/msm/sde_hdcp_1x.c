@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2010-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -11,8 +12,13 @@
 #include <linux/slab.h>
 #include <linux/stat.h>
 #include <linux/iopoll.h>
+#include <linux/version.h>
 #include <linux/msm_hdcp.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_helper.h>
+#else
 #include <drm/drm_dp_helper.h>
+#endif
 #include "sde_hdcp.h"
 #include "hdcp/msm_hdmi_hdcp_mgr.h"
 #include "dp/dp_reg.h"

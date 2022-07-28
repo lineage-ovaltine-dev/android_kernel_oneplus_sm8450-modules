@@ -47,7 +47,11 @@
 #include <drm/sde_drm.h>
 #include <drm/drm_file.h>
 #include <drm/drm_gem.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dsc.h>
+#else
 #include <drm/drm_dsc.h>
+#endif
 #include <drm/drm_bridge.h>
 
 #include "sde_power_handle.h"

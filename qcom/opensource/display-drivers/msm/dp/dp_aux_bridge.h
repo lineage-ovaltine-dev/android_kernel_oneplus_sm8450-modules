@@ -37,8 +37,13 @@
 #ifndef _DP_AUX_BRIDGE_H_
 #define _DP_AUX_BRIDGE_H_
 
+#include <linux/version.h>
 #include <linux/types.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_helper.h>
+#else
 #include <drm/drm_dp_helper.h>
+#endif
 
 /**
  * enum dp_aux_bridge_flag - DP aux bridge capability flag

@@ -8,7 +8,11 @@
 #define _DP_AUX_H_
 
 #include "dp_catalog.h"
-#include "drm/drm_dp_helper.h"
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_helper.h>
+#else
+#include <drm/drm_dp_helper.h>
+#endif
 #include "dp_aux_bridge.h"
 
 #define DP_STATE_NOTIFICATION_SENT          BIT(0)

@@ -29,14 +29,22 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/errno.h>
+#include <linux/version.h>
 
 #include <drm/drm_atomic_helper.h>
 #include <drm/drm_atomic.h>
 #include <drm/drm_crtc.h>
-#include <drm/drm_dp_mst_helper.h>
 #include <drm/drm_fixed.h>
 #include <drm/drm_connector.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_helper.h>
+#include <drm/display/drm_dp_mst_helper.h>
+#else
 #include <drm/drm_dp_helper.h>
+#include <drm/drm_dp_mst_helper.h>
+#endif
+
+#include <linux/version.h>
 
 #include "msm_drv.h"
 #include "msm_kms.h"

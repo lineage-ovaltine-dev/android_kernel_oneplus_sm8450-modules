@@ -5,7 +5,12 @@
 
 #include <linux/debugfs.h>
 #include <linux/slab.h>
+#include <linux/version.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_mst_helper.h>
+#else
 #include <drm/drm_dp_mst_helper.h>
+#endif
 #include <drm/drm_probe_helper.h>
 
 #include "dp_power.h"

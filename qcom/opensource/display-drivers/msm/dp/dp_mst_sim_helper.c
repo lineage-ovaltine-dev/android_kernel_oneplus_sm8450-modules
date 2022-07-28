@@ -38,9 +38,14 @@
 #include <linux/types.h>
 #include <linux/completion.h>
 #include <linux/delay.h>
+#include <linux/version.h>
 #include <drm/drm_fixed.h>
 #include <drm/drm_edid.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 19, 0))
+#include <drm/display/drm_dp_mst_helper.h>
+#else
 #include <drm/drm_dp_mst_helper.h>
+#endif
 #include "dp_mst_sim_helper.h"
 #include "dp_debug.h"
 
