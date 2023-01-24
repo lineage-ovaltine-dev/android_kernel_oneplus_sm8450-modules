@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #define pr_fmt(fmt)	"[sde-hdcp-2x] %s: " fmt, __func__
@@ -163,6 +164,7 @@ static int sde_hdcp_2x_get_next_message(struct sde_hdcp_2x_ctrl *hdcp,
 		else
 			return AKE_STORED_KM;
 	case AKE_STORED_KM:
+		fallthrough;
 	case AKE_NO_STORED_KM:
 		return AKE_SEND_H_PRIME;
 	case AKE_SEND_H_PRIME:
@@ -182,14 +184,16 @@ static int sde_hdcp_2x_get_next_message(struct sde_hdcp_2x_ctrl *hdcp,
 	case SKE_SEND_EKS:
 		if (!hdcp->repeater_flag)
 			return SKE_SEND_TYPE_ID;
+		fallthrough;
 	case SKE_SEND_TYPE_ID:
 		if (!hdcp->repeater_flag)
 			return SKE_SEND_TYPE_ID;
+		fallthrough;
 	case REP_STREAM_READY:
+		fallthrough;
 	case REP_SEND_ACK:
 		if (!hdcp->repeater_flag)
 			return INVALID_MESSAGE;
-
 		if (data->cmd == HDCP_TRANSPORT_CMD_SEND_MESSAGE)
 			return REP_STREAM_MANAGE;
 		else
