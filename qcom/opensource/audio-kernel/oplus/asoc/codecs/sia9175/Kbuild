@@ -144,4 +144,3 @@ obj-$(CONFIG_SND_SOC_SIA9175) += sia9175_dlkm.o
 sia9175_dlkm-y := $(SIA9175_OBJS)
 
 # inject some build related information
-DEFINES += -DBUILD_TIMESTAMP=\"$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')\"

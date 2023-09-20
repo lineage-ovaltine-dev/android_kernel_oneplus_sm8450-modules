@@ -92,4 +92,3 @@ ifeq ($(KERNEL_BUILD), 1)
 endif
 
 # inject some build related information
-DEFINES += -DBUILD_TIMESTAMP=\"$(shell date -u +'%Y-%m-%dT%H:%M:%SZ')\"
