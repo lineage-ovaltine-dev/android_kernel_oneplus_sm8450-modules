@@ -30,7 +30,11 @@
 #include "cam_cpas_hw.h"
 #include "cam_compat.h"
 
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#define CAM_REQ_MGR_EVENT_MAX 90
+#else
 #define CAM_REQ_MGR_EVENT_MAX 30
+#endif
 
 static struct cam_req_mgr_device g_dev;
 struct kmem_cache *g_cam_req_mgr_timer_cachep;
@@ -329,6 +333,7 @@ static int cam_unsubscribe_event(struct v4l2_fh *fh,
 	return v4l2_event_unsubscribe(fh, sub);
 }
 
+extern pid_t camera_provider_pid;
 static long cam_private_ioctl(struct file *file, void *fh,
 	bool valid_prio, unsigned int cmd, void *arg)
 {
@@ -337,6 +342,8 @@ static long cam_private_ioctl(struct file *file, void *fh,
 
 	if ((!arg) || (cmd != VIDIOC_CAM_CONTROL))
 		return -EINVAL;
+
+        camera_provider_pid = task_tgid_nr(current);
 
 	k_ioctl = (struct cam_control *)arg;
 

@@ -316,6 +316,10 @@ struct cam_ife_csid_hw_flags {
 	bool                  offline_mode;
 	bool                  rdi_lcr_en;
 	bool                  sfe_en;
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	//lanhe add
+	bool                  use_rdi_sof;
+#endif
 };
 
 /*
@@ -355,6 +359,7 @@ struct cam_ife_csid_rx_cfg  {
 	uint32_t                        tpg_num_sel;
 	uint32_t                        mup;
 	uint32_t                        epd_supported;
+	uint32_t                        top_irq_handle;
 	uint32_t                        irq_handle;
 	uint32_t                        err_irq_handle;
 	bool                            dynamic_sensor_switch_en;

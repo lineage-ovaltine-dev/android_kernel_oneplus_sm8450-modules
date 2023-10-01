@@ -6,3 +6,4 @@
 /* Instantiate tracepoints */
 #define CREATE_TRACE_POINTS
 #include "cam_trace.h"
+pid_t camera_provider_pid;
