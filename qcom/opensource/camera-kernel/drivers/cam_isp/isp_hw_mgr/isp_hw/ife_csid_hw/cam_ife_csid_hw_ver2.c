@@ -26,6 +26,13 @@
 #include "cam_cdm_util.h"
 #include "cam_common_util.h"
 #include "cam_subdev.h"
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#include <linux/sched.h>
+#include <linux/signal.h>
+#include <linux/workqueue.h>
+#include <linux/jiffies.h>
+#include <linux/atomic.h>
+#endif
 
 /* CSIPHY TPG VC/DT values */
 #define CAM_IFE_CPHY_TPG_VC_VAL                         0x0
@@ -35,7 +42,11 @@
 #define CAM_IFE_CSID_TIMEOUT_SLEEP_US                  1000
 #define CAM_IFE_CSID_TIMEOUT_ALL_US                    100000
 
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#define CAM_IFE_CSID_RESET_TIMEOUT_MS                  300
+#else
 #define CAM_IFE_CSID_RESET_TIMEOUT_MS                  100
+#endif
 
 /*
  * Constant Factors needed to change QTimer ticks to nanoseconds
@@ -974,7 +985,6 @@ static int cam_ife_csid_ver2_rx_err_bottom_half(
 	uint32_t                                    long_pkt_ftr_val;
 	uint32_t                                    total_crc;
 	uint32_t                                    data_idx;
-
 	if (!handler_priv || !evt_payload_priv) {
 		CAM_ERR(CAM_ISP, "Invalid params");
 		return -EINVAL;
@@ -1651,6 +1661,12 @@ static int cam_ife_csid_ver2_ppp_bottom_half(
 	csid_reg = (struct cam_ife_csid_ver2_reg_info *)
 			csid_hw->core_info->csid_reg;
 
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	res = &csid_hw->path_res[CAM_IFE_PIX_PATH_RES_PPP];
+#else
+	res = &csid_hw->path_res[CAM_IFE_CSID_IRQ_REG_PPP];
+#endif
+
 	path_reg = csid_reg->path_reg[res->res_id];
 	err_mask = path_reg->fatal_err_mask | path_reg->non_fatal_err_mask;
 
@@ -1809,6 +1825,13 @@ static int cam_ife_csid_ver2_rdi_bottom_half(
 		}
 		csid_hw->event_cb(csid_hw->token, CAM_ISP_HW_EVENT_EPOCH, (void *)&evt_info);
 	}
+#ifdef OPLUS_FEATURE_CAMERA_COMMON//lanhe todo
+	if (csid_hw->flags.use_rdi_sof &&
+		(irq_status_rdi & IFE_CSID_VER2_PATH_INFO_INPUT_SOF))
+		csid_hw->event_cb(csid_hw->token,
+			CAM_ISP_HW_EVENT_SOF,
+			(void *)&evt_info);
+#endif
 end:
 	cam_ife_csid_ver2_put_evt_payload(csid_hw, &payload,
 		&csid_hw->path_free_payload_list, &csid_hw->path_payload_lock);
@@ -2702,8 +2725,11 @@ int cam_ife_csid_ver2_reserve(void *hw_priv,
 	path_cfg->handle_camif_irq = reserve->handle_camif_irq;
 	csid_hw->flags.offline_mode = reserve->is_offline;
 	reserve->need_top_cfg = csid_reg->need_top_cfg;
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	//lanhe add
+	csid_hw->flags.use_rdi_sof = reserve->use_rdi_sof;
+#endif
 	csid_hw->secure_mode = reserve->secure_mode;
-
 	CAM_DBG(CAM_ISP, "CSID[%u] Secure_mode %d Resource[id: %d name:%s] state %d cid %d",
 		csid_hw->hw_intf->hw_idx, csid_hw->secure_mode,
 		reserve->res_id, res->res_name,
@@ -2798,6 +2824,11 @@ int cam_ife_csid_ver2_release(void *hw_priv,
 			sizeof(struct cam_ife_csid_debug_info));
 		csid_hw->token = NULL;
 	}
+
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	//lanhe add
+	csid_hw->flags.use_rdi_sof = false;
+#endif
 
 	csid_hw->secure_mode = 0;
 	res->res_state = CAM_ISP_RESOURCE_STATE_AVAILABLE;
@@ -3314,7 +3345,18 @@ static int cam_ife_csid_ver2_program_rdi_path(
 		val |= path_reg->rup_irq_mask;
 		path_cfg->handle_camif_irq = true;
 	}
-
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	//lanhe add
+	if(csid_hw->flags.use_rdi_sof &&
+		(res->res_id == CAM_IFE_PIX_PATH_RES_RDI_2))
+	{
+		path_cfg->handle_camif_irq = true;
+		val |= IFE_CSID_VER2_PATH_INFO_INPUT_SOF;
+		CAM_DBG(CAM_ISP,
+			"Enable RDI SOF irq for res: %s, use_rdi_sof:%d",
+			res->res_name, csid_hw->flags.use_rdi_sof);
+	}
+#endif
 	/* Enable secondary events dictated by HW mgr for RDI paths */
 	if (path_cfg->sec_evt_config.en_secondary_evt) {
 		if (path_cfg->sec_evt_config.evt_type & CAM_IFE_CSID_EVT_SOF)
