@@ -635,6 +635,20 @@ static int cam_flash_high(
 	return rc;
 }
 
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+int cam_flash_on(struct cam_flash_ctrl *flash_ctrl,
+	struct cam_flash_frame_setting *flash_data,
+	int mode) {
+	int rc = 0;
+	if (mode == 0) {
+		rc = cam_flash_low(flash_ctrl, flash_data);
+	} else if (mode == 1) {
+		rc = cam_flash_high(flash_ctrl, flash_data);
+	}
+	return rc;
+}
+#endif
+
 static int cam_flash_duration(struct cam_flash_ctrl *fctrl,
 	struct cam_flash_frame_setting *flash_data)
 {
@@ -1150,6 +1164,12 @@ int cam_flash_i2c_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 		CAM_ERR(CAM_FLASH, "Invalid num_cmd_buffer = %d",
 			csl_packet->num_cmd_buf);
 		cam_mem_put_cpu_buf(config.packet_handle);
+		return -EINVAL;
+	}
+
+	if (!csl_packet->num_cmd_buf) {
+		CAM_ERR(CAM_FLASH, "Invalid num_cmd_buffer = %d",
+			csl_packet->num_cmd_buf);
 		return -EINVAL;
 	}
 
@@ -1957,8 +1977,14 @@ int cam_flash_pmic_pkt_parser(struct cam_flash_ctrl *fctrl, void *arg)
 			}
 			flash_query_info =
 				(struct cam_flash_query_curr *)cmd_buf;
+
 #if __or(IS_REACHABLE(CONFIG_LEDS_QPNP_FLASH_V2), \
 			IS_REACHABLE(CONFIG_LEDS_QTI_FLASH))
+
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+			rc = set_flash_max_current_mA(fctrl->flash_max_current);
+			CAM_DBG(CAM_FLASH,"set_flash_max_current_mA");
+#endif
 			rc = cam_flash_led_prepare(fctrl->switch_trigger,
 				QUERY_MAX_AVAIL_CURRENT, &query_curr_ma,
 				soc_private->is_wled_flash);
