@@ -20,9 +20,9 @@ KBUILD_OPTIONS := WLAN_ROOT=$(KERNEL_SRC)/$(M)
 
 # MODNAME should be qca_cld3_wlan for helium based platform
 ifeq (qca_cld3, $(WLAN_CHIPSET))
-KBUILD_OPTIONS += MODNAME?=$(WLAN_CHIPSET)_$(LOCAL_DEV_NAME)
+# KBUILD_OPTIONS += MODNAME?=$(WLAN_CHIPSET)_$(LOCAL_DEV_NAME)
 else
-KBUILD_OPTIONS += MODNAME?=wlan
+# KBUILD_OPTIONS += MODNAME?=wlan
 endif
 
 #By default build for CLD
