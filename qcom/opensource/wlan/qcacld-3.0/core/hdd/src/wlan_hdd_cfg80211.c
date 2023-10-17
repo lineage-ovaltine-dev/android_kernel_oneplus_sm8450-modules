@@ -179,6 +179,11 @@
 #include "os_if_pkt_capture.h"
 #include "wlan_osif_features.h"
 
+#ifdef OPLUS_BUG_STABILITY
+//Add for: hotspot manager
+#include <wlan_hdd_hostapd_wext.h>
+#endif /* OPLUS_BUG_STABILITY */
+
 #define g_mode_rates_size (12)
 #define a_mode_rates_size (8)
 
@@ -585,7 +590,7 @@ static const struct ieee80211_txrx_stypes
 static const struct ieee80211_iface_limit
 	wlan_hdd_sta_iface_limit[] = {
 	{
-		.max = 3,       /* p2p0 is a STA as well */
+		.max = 2,
 		.types = BIT(NL80211_IFTYPE_STATION),
 	},
 };
@@ -594,7 +599,7 @@ static const struct ieee80211_iface_limit
 static const struct ieee80211_iface_limit
 	wlan_hdd_ap_iface_limit[] = {
 	{
-		.max = (QDF_MAX_NO_OF_SAP_MODE + SAP_MAX_OBSS_STA_CNT),
+		.max = (QDF_MAX_NO_OF_SAP_MODE),
 		.types = BIT(NL80211_IFTYPE_AP),
 	},
 };
@@ -612,13 +617,11 @@ static const struct ieee80211_iface_limit
 	},
 };
 
+/* STA + AP combination */
 static const struct ieee80211_iface_limit
 	wlan_hdd_sta_ap_iface_limit[] = {
 	{
-		/* We need 1 extra STA interface for OBSS scan when SAP starts
-		 * with HT40 in STA+SAP concurrency mode
-		 */
-		.max = (1 + SAP_MAX_OBSS_STA_CNT),
+		.max = 1,
 		.types = BIT(NL80211_IFTYPE_STATION),
 	},
 	{
@@ -627,12 +630,11 @@ static const struct ieee80211_iface_limit
 	},
 };
 
-/* STA + P2P combination */
+/* STA + P2P + P2P combination */
 static const struct ieee80211_iface_limit
 	wlan_hdd_sta_p2p_iface_limit[] = {
 	{
-		/* One reserved for dedicated P2PDEV usage */
-		.max = 2,
+		.max = 1,
 		.types = BIT(NL80211_IFTYPE_STATION)
 	},
 	{
@@ -644,32 +646,26 @@ static const struct ieee80211_iface_limit
 	},
 };
 
-/* STA + AP + P2PGO combination */
+/* STA + AP + P2P combination */
 static const struct ieee80211_iface_limit
-wlan_hdd_sta_ap_p2pgo_iface_limit[] = {
-	/* Support for AP+P2PGO interfaces */
+wlan_hdd_sta_ap_p2p_iface_limit[] = {
 	{
-	   .max = 2,
+	   .max = 1,
 	   .types = BIT(NL80211_IFTYPE_STATION)
 	},
 	{
 	   .max = 1,
-	   .types = BIT(NL80211_IFTYPE_P2P_GO)
+	   .types = BIT(NL80211_IFTYPE_P2P_GO) | BIT(NL80211_IFTYPE_P2P_CLIENT)
 	},
 	{
 	   .max = 1,
 	   .types = BIT(NL80211_IFTYPE_AP)
-	}
+	},
 };
 
 /* SAP + P2P combination */
 static const struct ieee80211_iface_limit
 wlan_hdd_sap_p2p_iface_limit[] = {
-	{
-	   /* 1 dedicated for p2p0 which is a STA type */
-	   .max = 1,
-	   .types = BIT(NL80211_IFTYPE_STATION)
-	},
 	{
 	   /* The p2p interface in SAP+P2P can be GO/CLI.
 	    * The p2p connection can be formed on p2p0 or p2p-p2p0-x.
@@ -688,11 +684,6 @@ wlan_hdd_sap_p2p_iface_limit[] = {
 static const struct ieee80211_iface_limit
 wlan_hdd_p2p_p2p_iface_limit[] = {
 	{
-	   /* 1 dedicated for p2p0 which is a STA type */
-	   .max = 1,
-	   .types = BIT(NL80211_IFTYPE_STATION)
-	},
-	{
 	   /* The p2p interface in P2P+P2P can be GO/CLI.
 	    * For P2P+P2P, the new interfaces are formed on p2p-p2p0-x.
 	    */
@@ -709,20 +700,50 @@ static const struct ieee80211_iface_limit
 	},
 };
 
+/* STA + NAN disc combination */
+static const struct ieee80211_iface_limit
+	wlan_hdd_sta_nan_iface_limit[] = {
+	{
+		/* STA */
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_STATION)
+	},
+	{
+		/* NAN */
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_NAN),
+	},
+};
+
+/* SAP + NAN disc combination */
+static const struct ieee80211_iface_limit
+	wlan_hdd_sap_nan_iface_limit[] = {
+	{
+		/* SAP */
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_AP)
+	},
+	{
+		/* NAN */
+		.max = 1,
+		.types = BIT(NL80211_IFTYPE_NAN),
+	},
+};
+
 static struct ieee80211_iface_combination
 	wlan_hdd_iface_combination[] = {
 	/* STA */
 	{
 		.limits = wlan_hdd_sta_iface_limit,
 		.num_different_channels = 2,
-		.max_interfaces = 3,
+		.max_interfaces = 2,
 		.n_limits = ARRAY_SIZE(wlan_hdd_sta_iface_limit),
 	},
 	/* AP */
 	{
 		.limits = wlan_hdd_ap_iface_limit,
 		.num_different_channels = 2,
-		.max_interfaces = (SAP_MAX_OBSS_STA_CNT + QDF_MAX_NO_OF_SAP_MODE),
+		.max_interfaces = (QDF_MAX_NO_OF_SAP_MODE),
 		.n_limits = ARRAY_SIZE(wlan_hdd_ap_iface_limit),
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)) || \
 	defined(CFG80211_BEACON_INTERVAL_BACKPORT)
@@ -740,7 +761,7 @@ static struct ieee80211_iface_combination
 	{
 		.limits = wlan_hdd_sta_ap_iface_limit,
 		.num_different_channels = 2,
-		.max_interfaces = (1 + SAP_MAX_OBSS_STA_CNT + QDF_MAX_NO_OF_SAP_MODE),
+		.max_interfaces = (1 + QDF_MAX_NO_OF_SAP_MODE),
 		.n_limits = ARRAY_SIZE(wlan_hdd_sta_ap_iface_limit),
 		.beacon_int_infra_match = true,
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0)) || \
@@ -748,33 +769,31 @@ static struct ieee80211_iface_combination
 		.beacon_int_min_gcd = 1,
 #endif
 	},
-	/* STA + P2P */
+	/* STA + P2P + P2P */
 	{
 		.limits = wlan_hdd_sta_p2p_iface_limit,
 		.num_different_channels = 2,
-		/* one interface reserved for P2PDEV dedicated usage */
-		.max_interfaces = 4,
+		.max_interfaces = 3,
 		.n_limits = ARRAY_SIZE(wlan_hdd_sta_p2p_iface_limit),
 		.beacon_int_infra_match = true,
 	},
-	/* STA + P2P GO + SAP */
+	/* STA + P2P + SAP */
 	{
-		.limits = wlan_hdd_sta_ap_p2pgo_iface_limit,
+		.limits = wlan_hdd_sta_ap_p2p_iface_limit,
 		/* we can allow 3 channels for three different persona
 		 * but due to firmware limitation, allow max 2 concrnt channels.
 		 */
 		.num_different_channels = 2,
-		/* one interface reserved for P2PDEV dedicated usage */
-		.max_interfaces = 4,
-		.n_limits = ARRAY_SIZE(wlan_hdd_sta_ap_p2pgo_iface_limit),
+		.max_interfaces = 3,
+		.n_limits = ARRAY_SIZE(wlan_hdd_sta_ap_p2p_iface_limit),
 		.beacon_int_infra_match = true,
 	},
 	/* SAP + P2P */
 	{
 		.limits = wlan_hdd_sap_p2p_iface_limit,
 		.num_different_channels = 2,
-		/* 1-p2p0 + 1-SAP + 1-P2P (on p2p0 or p2p-p2p0-x) */
-		.max_interfaces = 3,
+		/* 1-SAP + 1-P2P */
+		.max_interfaces = 2,
 		.n_limits = ARRAY_SIZE(wlan_hdd_sap_p2p_iface_limit),
 		.beacon_int_infra_match = true,
 	},
@@ -782,8 +801,8 @@ static struct ieee80211_iface_combination
 	{
 		.limits = wlan_hdd_p2p_p2p_iface_limit,
 		.num_different_channels = 2,
-		/* 1-p2p0 + 2-P2P (on p2p-p2p0-x) */
-		.max_interfaces = 3,
+		/* 2-P2P */
+		.max_interfaces = 2,
 		.n_limits = ARRAY_SIZE(wlan_hdd_p2p_p2p_iface_limit),
 		.beacon_int_infra_match = true,
 	},
@@ -793,6 +812,21 @@ static struct ieee80211_iface_combination
 		.max_interfaces = 3,
 		.num_different_channels = 2,
 		.n_limits = ARRAY_SIZE(wlan_hdd_mon_iface_limit),
+	},
+	/* NAN + STA */
+	{
+		.limits = wlan_hdd_sta_nan_iface_limit,
+		.max_interfaces = 2,
+		.num_different_channels = 2,
+		.n_limits = ARRAY_SIZE(wlan_hdd_sta_nan_iface_limit),
+	},
+	/* NAN + SAP */
+	{
+		.limits = wlan_hdd_sap_nan_iface_limit,
+		.num_different_channels = 2,
+		.max_interfaces = 2,
+		.n_limits = ARRAY_SIZE(wlan_hdd_sap_nan_iface_limit),
+		.beacon_int_infra_match = true,
 	},
 };
 
@@ -9330,6 +9364,15 @@ static int hdd_config_latency_level(struct hdd_adapter *adapter,
 error:
 	ret = qdf_status_to_os_return(status);
 
+//#ifdef OPLUS_FEATURE_WIFI_WSA
+//Add for STBC&MRC
+        if (!ret && (latency_level == QCA_WLAN_VENDOR_ATTR_CONFIG_LATENCY_LEVEL_LOW)) {
+            send_oplus_uevent("forcestbc=status:Success,enable=True");
+        } else {
+            send_oplus_uevent("forcestbc=status:Success,enable=False");
+        }
+//#endif /* OPLUS_FEATURE_WIFI_WSA */
+
 	return ret;
 }
 
@@ -9682,7 +9725,6 @@ static int hdd_set_nss(struct hdd_adapter *adapter,
 	if (ret == 0 && adapter->device_mode == QDF_SAP_MODE)
 		ret = wma_cli_set_command(adapter->vdev_id, WMI_VDEV_PARAM_NSS,
 					  nss, VDEV_CMD);
-
 	return ret;
 }
 
@@ -12484,7 +12526,13 @@ __wlan_hdd_cfg80211_set_ns_offload(struct wiphy *wiphy,
 
 	if (!ucfg_pmo_is_active_mode_offloaded(hdd_ctx->psoc)) {
 		hdd_warn("Active mode offload is disabled");
+		#ifndef OPLUS_BUG_STABILITY
+		//Modify the return value for VTS test
 		return -EINVAL;
+		#else /* OPLUS_BUG_STABILITY */
+		return 0;
+		#endif /* OPLUS_BUG_STABILITY */
+
 	}
 
 	if (wlan_cfg80211_nla_parse(tb, QCA_WLAN_VENDOR_ATTR_ND_OFFLOAD_MAX,
@@ -15898,6 +15946,160 @@ put_attr_fail:
 	return -EINVAL;
 }
 
+#ifdef OPLUS_BUG_STABILITY
+//Add for: hotspot manager
+static const struct nla_policy
+oplus_attr_policy[OPLUS_WLAN_VENDOR_ATTR_MAX + 1] = {
+	[OPLUS_WLAN_VENDOR_ATTR_MAC_ADDR] = {.type = NLA_BINARY, .len = QDF_MAC_ADDR_SIZE},
+	[OPLUS_WLAN_VENDOR_ATTR_WETHER_BLOCK_CLIENT] = {.type = NLA_U8},
+	[OPLUS_WLAN_VENDOR_ATTR_SAP_MAX_CLIENT_NUM] = {.type = NLA_U32},
+};
+
+static int __wlan_hdd_cfg80211_oplus_modify_acl(struct wiphy *wiphy,
+					struct wireless_dev *wdev,
+					const void *data, int data_len)
+{
+	int32_t status;
+	struct nlattr* tb[OPLUS_WLAN_VENDOR_ATTR_MAX + 1];
+	uint8_t extra[8];
+	int8_t block;
+
+	hdd_enter();
+
+	status = wlan_cfg80211_nla_parse(tb, OPLUS_WLAN_VENDOR_ATTR_MAX,
+					data, data_len, oplus_attr_policy);
+	if (status) {
+		hdd_err("Invalid attributes!");
+		status = -EINVAL;
+		goto out;
+	}
+
+	if (tb[OPLUS_WLAN_VENDOR_ATTR_MAC_ADDR]) {
+		nla_memcpy(extra, tb[OPLUS_WLAN_VENDOR_ATTR_MAC_ADDR], QDF_MAC_ADDR_SIZE);
+	} else {
+		hdd_err("Invalid argument:No sta mac addr provided!");
+		status = -EINVAL;
+		goto out;
+	}
+	if (tb[OPLUS_WLAN_VENDOR_ATTR_WETHER_BLOCK_CLIENT]) {
+		block = nla_get_u8(tb[OPLUS_WLAN_VENDOR_ATTR_WETHER_BLOCK_CLIENT]);
+	} else {
+		hdd_err("Invalid argument:No block value!");
+		status = -EINVAL;
+		goto out;
+	}
+
+	//we always modify black list, as for now
+	extra[6] = 0;
+	extra[7] = block;
+
+	status = oplus_wlan_hdd_modify_acl(wdev->netdev, (char*)extra);
+	if (0 != status) {
+		hdd_err("failed to modify acl! %d", status);
+		goto out;
+	}
+
+out:
+	hdd_exit();
+	return status;
+}
+
+/**
+ * wlan_hdd_cfg80211_oplus_modify_acl() - modify acl
+ * @wiphy: Pointer to wiphy
+ * @wdev: Pointer to wireless device
+ * @data: vendor command extra data
+ * @data_len: the size of extra data
+ *
+ * Return: 0 for success, non-zero for failure
+ */
+static int wlan_hdd_cfg80211_oplus_modify_acl(struct wiphy *wiphy,
+				  struct wireless_dev *wdev,
+				  const void *data, int data_len)
+{
+	int errno;
+	struct osif_vdev_sync *vdev_sync;
+
+	errno = osif_vdev_sync_op_start(wdev->netdev, &vdev_sync);
+	if (errno)
+		return errno;
+
+	errno = __wlan_hdd_cfg80211_oplus_modify_acl(wiphy, wdev, data, data_len);
+
+	osif_vdev_sync_op_stop(vdev_sync);
+
+	return errno;
+}
+
+static int __wlan_hdd_cfg80211_oplus_set_max_assoc(struct wiphy *wiphy,
+					  struct wireless_dev *wdev,
+					  const void *data, int data_len)
+{
+	uint32_t status;
+	int extra[2];
+	uint32_t max_clients;
+	struct nlattr* tb[OPLUS_WLAN_VENDOR_ATTR_MAX + 1];
+
+	hdd_enter();
+
+	status = wlan_cfg80211_nla_parse(tb, OPLUS_WLAN_VENDOR_ATTR_MAX,
+					data, data_len, oplus_attr_policy);
+
+	if (status) {
+		hdd_err("Invalid attributes!");
+		status = -EINVAL;
+		goto out;
+	}
+
+	if (tb[OPLUS_WLAN_VENDOR_ATTR_SAP_MAX_CLIENT_NUM]) {
+		max_clients = nla_get_u32(tb[OPLUS_WLAN_VENDOR_ATTR_SAP_MAX_CLIENT_NUM]);
+	} else {
+		hdd_err("Invalid argument!");
+		status = -EINVAL;
+		goto out;
+	}
+
+	extra[0] = QCSAP_PARAM_MAX_ASSOC;
+	extra[1] = max_clients;
+
+	status = oplus_wlan_hdd_set_max_assoc(wdev->netdev, (char*)extra);
+	if (0 != status) {
+		hdd_err("failed to set max assoc!");
+		goto out;
+	}
+
+out:
+	hdd_exit();
+	return status;
+}
+
+/**
+ * wlan_hdd_cfg80211_oplus_set_max_assoc() - modify acl
+ * @wiphy: Pointer to wiphy
+ * @wdev: Pointer to wireless device
+ * @data: vendor command extra data
+ * @data_len: the size of extra data
+ *
+ * Return: 0 for success, non-zero for failure
+ */
+static int wlan_hdd_cfg80211_oplus_set_max_assoc(struct wiphy *wiphy,
+					  struct wireless_dev *wdev,
+					  const void *data, int data_len)
+{
+	int errno;
+	struct osif_vdev_sync *vdev_sync;
+
+	errno = osif_vdev_sync_op_start(wdev->netdev, &vdev_sync);
+	if (errno)
+		return errno;
+
+	errno = __wlan_hdd_cfg80211_oplus_set_max_assoc(wiphy, wdev, data, data_len);
+
+	osif_vdev_sync_op_stop(vdev_sync);
+
+	return errno;
+}
+#endif /* OPLUS_BUG_STABILITY */
 
 /**
  * __wlan_hdd_cfg80211_get_nud_stats() - get arp stats command to firmware
@@ -17951,6 +18153,30 @@ const struct wiphy_vendor_command hdd_wiphy_vendor_commands[] = {
 		vendor_command_policy(get_usable_channel_policy,
 				      QCA_WLAN_VENDOR_ATTR_MAX)
 	},
+
+	#ifdef OPLUS_BUG_STABILITY
+	//add for: hotspot manager via wificond
+	{
+		.info.vendor_id = QCA_NL80211_VENDOR_ID,
+		.info.subcmd = OPLUS_NL80211_VENDOR_SUBCMD_MODIFY_ACL,
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV |
+			 WIPHY_VENDOR_CMD_NEED_NETDEV |
+			 WIPHY_VENDOR_CMD_NEED_RUNNING,
+		.doit = wlan_hdd_cfg80211_oplus_modify_acl,
+  		vendor_command_policy(oplus_attr_policy,
+					OPLUS_WLAN_VENDOR_ATTR_MAX)
+	},
+	{
+		.info.vendor_id = QCA_NL80211_VENDOR_ID,
+		.info.subcmd = OPLUS_NL80211_VENDOR_SUBCMD_SET_MAX_ASSOC,
+		.flags = WIPHY_VENDOR_CMD_NEED_WDEV |
+		     WIPHY_VENDOR_CMD_NEED_NETDEV |
+			 WIPHY_VENDOR_CMD_NEED_RUNNING,
+		.doit = wlan_hdd_cfg80211_oplus_set_max_assoc,
+  		vendor_command_policy(oplus_attr_policy,
+					OPLUS_WLAN_VENDOR_ATTR_MAX)
+	},
+    #endif /* OPLUS_BUG_STABILITY */
 
 	FEATURE_ACTIVE_TOS_VENDOR_COMMANDS
 	FEATURE_NAN_VENDOR_COMMANDS

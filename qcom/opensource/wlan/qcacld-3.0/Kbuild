@@ -34,6 +34,11 @@ ifneq ($(ANDROID_BUILD_TOP),)
 endif
 endif
 
+found = $(shell if grep -qF "struct link_station_parameters" $(srctree)/include/net/cfg80211.h; then echo "yes"; else echo "no"; fi;)
+ifeq ($(findstring yes, $(found)), yes)
+cppflags-y += -DCFG80211_LINK_STA_PARAMS_PRESENT
+endif
+
 include $(WLAN_ROOT)/configs/$(CONFIG_QCA_CLD_WLAN_PROFILE)_defconfig
 
 # add configurations in WLAN_CFG_OVERRIDE
@@ -96,6 +101,10 @@ HDD_DIR :=	core/hdd
 HDD_INC_DIR :=	$(HDD_DIR)/inc
 HDD_SRC_DIR :=	$(HDD_DIR)/src
 
+#ifdef OPLUS_FEATURE_CONN_POWER_MONITOR
+KBUILD_CPPFLAGS += -DOPLUS_FEATURE_CONN_POWER_MONITOR
+#endif /* OPLUS_FEATURE_CONN_POWER_MONITOR */
+
 HDD_INC := 	-I$(WLAN_ROOT)/$(HDD_INC_DIR) \
 		-I$(WLAN_ROOT)/$(HDD_SRC_DIR)
 
@@ -121,6 +130,20 @@ HDD_OBJS := 	$(HDD_SRC_DIR)/wlan_hdd_assoc.o \
 		$(HDD_SRC_DIR)/wlan_hdd_tx_rx.o \
 		$(HDD_SRC_DIR)/wlan_hdd_wmm.o \
 		$(HDD_SRC_DIR)/wlan_hdd_wowl.o\
+
+ifeq ($(CONFIG_OPLUS_FEATURE_WIFI_OPLUSWFD), y)
+KBUILD_CPPFLAGS += -DOPLUS_FEATURE_WIFI_OPLUSWFD
+HDD_OBJS +=	$(HDD_SRC_DIR)/wlan_oplus_wfd.o
+endif
+
+ifeq ($(CONFIG_OPLUS_FEATURE_WIFI_OPLUSWFD), m)
+KBUILD_CPPFLAGS += -DOPLUS_FEATURE_WIFI_OPLUSWFD
+HDD_OBJS +=	$(HDD_SRC_DIR)/wlan_oplus_wfd.o
+endif
+### End
+
+KBUILD_CPPFLAGS += -DOPLUS_CNSS_POWER_DEBUG
+###End
 
 ifeq ($(CONFIG_WLAN_FEATURE_PERIODIC_STA_STATS), y)
 HDD_OBJS += $(HDD_SRC_DIR)/wlan_hdd_periodic_sta_stats.o
