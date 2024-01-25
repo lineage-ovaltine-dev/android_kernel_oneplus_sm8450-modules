@@ -47,14 +47,6 @@
 #include "msm_common.h"
 #include "msm_dailink.h"
 
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-#include "feedback/oplus_audio_kernel_fb.h"
-#ifdef dev_err
-#undef dev_err
-#define dev_err dev_err_fb_delay
-#endif
-#endif /* CONFIG_OPLUS_FEATURE_MM_FEEDBACK */
-
 #define DRV_NAME "waipio-asoc-snd"
 #define __CHIPSET__ "WAIPIO "
 #define MSM_DAILINK_NAME(name) (__CHIPSET__#name)

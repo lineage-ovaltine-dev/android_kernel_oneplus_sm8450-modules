@@ -56,10 +56,6 @@ extern bool g_speaker_resistance_fail;
 #include <linux/fs.h>
 #endif /* OPLUS_ARCH_EXTENDS */
 
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-#include <soc/oplus/system/oplus_mm_kevent_fb.h>
-#endif
-
 /* Change volume selection behavior:
  * Uncomment following line to generate a profile change when updating
  * a volume control (also changes to the profile of the modified  volume
@@ -2917,239 +2913,6 @@ static int tfa98xx_get_stereo_ctl(struct snd_kcontrol *kcontrol,
 
 #endif /* OPLUS_ARCH_EXTENDS */
 
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-#define OPLUS_AUDIO_EVENTID_SMARTPA_ERR    10041
-#define OPLUS_AUDIO_EVENTID_SPK_ERR        10042
-#define ERROR_INFO_MAX_LEN                 32
-
-#define REG_BITS  16
-#define TFA9874_STATUS_NORMAL_VALUE    ((0x850F<<REG_BITS) + 0x16)/*reg 0x13 high 16 bits and 0x10 low 16 bits*/
-#define TFA9874_STATUS_CHECK_MASK      ((0x300<<REG_BITS) + 0x9C)/*reg 0x10 mask bit2~4, bit7, reg 0x13 mask bit8 , bit9 */
-#define TFA9873_STATUS_NORMAL_VALUE    ((0x850F<<REG_BITS) + 0x56) /*reg 0x13 high 16 bits and 0x10 low 16 bits*/
-#define TFA9873_STATUS_CHECK_MASK      ((0x300<<REG_BITS) + 0x15C)/*reg 0x10 mask bit2~4, bit6, bit8, reg 0x13 mask bit8 , bit9*/
-
-static ktime_t last_fb = 0;
-static bool g_chk_err = false;
-static char const *tfa98xx_check_feedback_text[] = {"Off", "On"};
-static const struct soc_enum tfa98xx_check_feedback_enum =
-	SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(tfa98xx_check_feedback_text), tfa98xx_check_feedback_text);
-
-enum {
-	PA_TFA9874 = 0,
-	PA_TFA9873,
-	PA_MAX
-};
-
-static int g_pa_type = PA_MAX;
-
-struct check_status_err {
-	int bit;
-	uint32_t err_val;
-	char info[ERROR_INFO_MAX_LEN];
-};
-static const struct check_status_err check_err_tfa9874[] = {
-	/*register 0x10 check bits*/
-	{2,             0, "OverTemperature"},
-	{3,             1, "CurrentHigh"},
-	{4,             0, "VbatLow"},
-	{7,             1, "NoClock"},
-	/*register 0x13 check bits*/
-	{8 + REG_BITS,  0, "VbatHigh"},
-	{9 + REG_BITS,  1, "Clipping"},
-};
-
-static const struct check_status_err check_err_tfa9873[] = {
-	/*register 0x10 check bits*/
-	{2,             0, "OverTemperature"},
-	{3,             1, "CurrentHigh"},
-	{4,             0, "VbatLow"},
-	{6,             0, "UnstableClk"},
-	{8,             1, "NoClock"},
-	/*register 0x13 check bits*/
-	{8 + REG_BITS,  0, "VbatHigh"},
-	{9 + REG_BITS,  1, "Clipping"},
-};
-
-const unsigned char fb_regs[] = {0x00, 0x01, 0x02, 0x04, 0x05, 0x11, 0x14, 0x15, 0x16};
-
-static int tfa98xx_check_status_reg(void )
-{
-	struct tfa98xx *tfa98xx;
-	uint32_t reg_val;
-	uint16_t reg10, reg13, reg_tmp;
-	int flag = 0;
-	char fd_buf[MM_KEVENT_MAX_PAYLOAD_SIZE] = {0};
-	char info[MM_KEVENT_MAX_PAYLOAD_SIZE] = {0};
-	int offset = 0;
-	enum Tfa98xx_Error err;
-	int i, num = 0;
-
-	if (!g_chk_err) {
-		return 0;
-	}
-	if ((g_pa_type != PA_TFA9874) && (g_pa_type != PA_TFA9873)) {
-		return 0;
-	}
-	if ((last_fb !=0)  && ktime_before(ktime_get(), ktime_add_ms(last_fb, MM_FB_KEY_RATELIMIT_5MIN))) {
-		return 0;
-	}
-	mutex_lock(&tfa98xx_mutex);
-	/* check status register 0x10 value */
-	list_for_each_entry(tfa98xx, &tfa98xx_device_list, list) {
-		num++;
-		err = tfa98xx_read_register16_v6(tfa98xx->tfa, 0x10, &reg10);
-		if (Tfa98xx_Error_Ok == err) {
-			err = tfa98xx_read_register16_v6(tfa98xx->tfa, 0x13, &reg13);
-		}
-		pr_info("%s: read SPK%d status regs ret=%d, reg[0x10]=0x%x, reg[0x13]=0x%x", __func__, num, err, reg10, reg13);
-
-		if (Tfa98xx_Error_Ok == err) {
-			reg_val = (reg13 << REG_BITS) + reg10;
-			flag = 0;
-			if ((g_pa_type == PA_TFA9874) &&
-					((TFA9874_STATUS_NORMAL_VALUE&TFA9874_STATUS_CHECK_MASK) != (reg_val&TFA9874_STATUS_CHECK_MASK))) {
-				offset = strlen(info);
-				scnprintf(info + offset, sizeof(info) - offset - 1,
-						"TFA9874 SPK%d:reg[0x10]=0x%x,reg[0x13]=0x%x,", num, reg10, reg13);
-				for (i = 0; i < ARRAY_SIZE(check_err_tfa9874); i++) {
-					if (check_err_tfa9874[i].err_val == (1 & (reg_val>>check_err_tfa9874[i].bit))) {
-						offset = strlen(info);
-						scnprintf(info + offset, sizeof(info) - offset - 1, "%s,", check_err_tfa9874[i].info);
-					}
-				}
-				flag = 1;
-			} else if ((g_pa_type == PA_TFA9873) &&
-					((TFA9873_STATUS_NORMAL_VALUE&TFA9873_STATUS_CHECK_MASK) != (reg_val&TFA9873_STATUS_CHECK_MASK))) {
-				offset = strlen(info);
-				scnprintf(info + offset, sizeof(info) - offset - 1,
-						"TFA9873 SPK%d:reg[0x10]=0x%x,reg[0x13]=0x%x,", num, reg10, reg13);
-				for (i = 0; i < ARRAY_SIZE(check_err_tfa9873); i++) {
-					if (check_err_tfa9873[i].err_val == (1 & (reg_val>>check_err_tfa9873[i].bit))) {
-						offset = strlen(info);
-						scnprintf(info + offset, sizeof(info) - offset - 1, "%s,", check_err_tfa9873[i].info);
-					}
-				}
-				flag = 1;
-			}
-
-			/* read other registers */
-			if (flag == 1) {
-				offset = strlen(info);
-				scnprintf(info + offset, sizeof(info) - offset - 1, "(");
-				for (i = 0; i < sizeof(fb_regs); i++) {
-					err = tfa98xx_read_register16_v6(tfa98xx->tfa, fb_regs[i], &reg_tmp);
-					if (Tfa98xx_Error_Ok == err) {
-						offset = strlen(info);
-						scnprintf(info + offset, sizeof(info) - offset - 1, "%x,", reg_tmp);
-					} else {
-						break;
-					}
-				}
-				offset = strlen(info);
-				scnprintf(info + offset, sizeof(info) - offset - 1, "),");
-			}
-		} else {
-			offset = strlen(info);
-			scnprintf(info + offset, sizeof(info) - offset - 1, "%s SPK%d: failed to read regs 0x10 and 0x13, error=%d,", \
-					(g_pa_type == PA_TFA9873) ? "TFA9873" : "TFA9874", num, err);\
-			last_fb = ktime_get();
-		}
-	}
-	mutex_unlock(&tfa98xx_mutex);
-
-	/* feedback the check error */
-	offset = strlen(info);
-	if ((offset > 0) && (offset < MM_KEVENT_MAX_PAYLOAD_SIZE)) {
-		fd_buf[offset] = '\0';
-		scnprintf(fd_buf, sizeof(fd_buf) - 1, "payload@@%s", info);
-		mm_fb_audio_kevent_named(OPLUS_AUDIO_EVENTID_SMARTPA_ERR,
-				MM_FB_KEY_RATELIMIT_5MIN, fd_buf);
-		pr_err("%s: fd_buf=%s\n", __func__, fd_buf);
-	}
-
-	return 1;
-}
-
-static int tfa98xx_set_check_feedback(struct snd_kcontrol *kcontrol,
-			       struct snd_ctl_elem_value *ucontrol)
-{
-	int need_chk = ucontrol->value.integer.value[0];
-
-	pr_info("%s: need_chk = %d\n", __func__, need_chk);
-	g_chk_err = need_chk;
-
-	return 1;
-}
-
-static int tfa98xx_get_check_feedback(struct snd_kcontrol *kcontrol,
-							struct snd_ctl_elem_value *ucontrol)
-{
-	ucontrol->value.integer.value[0] = g_chk_err;
-	pr_info("%s: g_chk_err = %d\n", __func__, g_chk_err);
-
-	return 0;
-}
-
-static const struct snd_kcontrol_new tfa98xx_check_feedback[] = {
-	SOC_ENUM_EXT("TFA_CHECK_FEEDBACK", tfa98xx_check_feedback_enum,
-			   tfa98xx_get_check_feedback, tfa98xx_set_check_feedback),
-};
-
-static int tfa98xx_check_speaker_status(struct tfa98xx *tfa98xx)
-{
-	char fd_buf[MM_KEVENT_MAX_PAYLOAD_SIZE] = {0};
-	enum Tfa98xx_Error err = Tfa98xx_Error_Ok;
-	char buffer[6] = {0};
-
-	if (!g_chk_err) {
-		return 0;
-	}
-	if ((g_pa_type != PA_TFA9874) && (g_pa_type != PA_TFA9873)) {
-		return 0;
-	}
-	if ((last_fb !=0)  && ktime_before(ktime_get(), ktime_add_ms(last_fb, MM_FB_KEY_RATELIMIT_5MIN))) {
-		return 0;
-	}
-
-	mutex_lock(&tfa98xx->dsp_lock);
-	//Get the GetStatusChange results
-	err = tfa_dsp_cmd_id_write_read_v6(tfa98xx->tfa, MODULE_FRAMEWORK,
-			FW_PAR_ID_GET_STATUS_CHANGE, 6, (unsigned char *)buffer);
-	mutex_unlock(&tfa98xx->dsp_lock);
-
-	pr_info("%s: ret=%d, get value=%d\n", __func__, err, buffer[2]);
-
-	if (err == Tfa98xx_Error_Ok) {
-		if (buffer[2] & 0x6) {
-			scnprintf(fd_buf, sizeof(fd_buf) - 1, "payload@@");
-			if (buffer[2] & 0x2) {
-				pr_err("%s: ##ERROR## Primary SPK hole blocked or damaged event detected 0x%x\n",
-						__func__, buffer[2]);
-				scnprintf(fd_buf + strlen(fd_buf),
-						sizeof(fd_buf) - strlen(fd_buf), " SPK1 damaged or hole blocked");
-			}
-			if ((tfa98xx_device_count == 2) && (buffer[2] & 0x4)) {
-				pr_err("%s: ##ERROR## Second SPK hole blocked or SPK damaged event detected 0x%x\n",
-						__func__, buffer[2]);
-				scnprintf(fd_buf + strlen(fd_buf),
-						sizeof(fd_buf) - strlen(fd_buf), " SPK2 damaged or hole blocked");
-			}
-			mm_fb_audio_kevent_named(OPLUS_AUDIO_EVENTID_SPK_ERR,
-					MM_FB_KEY_RATELIMIT_5MIN, fd_buf);
-			pr_err("%s: fd_buf=%s\n", __func__, fd_buf);
-		}
-	} else {
-		scnprintf(fd_buf, sizeof(fd_buf) - 1, "payload@@spk protection algorithm error, ret=%d,", err);
-		mm_fb_audio_kevent_named(OPLUS_AUDIO_EVENTID_SMARTPA_ERR,
-				MM_FB_KEY_RATELIMIT_5MIN, fd_buf);
-		last_fb = ktime_get();
-		pr_err("%s: tfa_dsp_cmd_id_write_read_v6 err = %d\n", __func__, err);
-	}
-
-	return err;
-}
-#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
-
 static int tfa98xx_create_controls(struct tfa98xx *tfa98xx)
 {
 	int prof, nprof, mix_index = 0;
@@ -3905,10 +3668,6 @@ static void tfa98xx_container_loaded(const struct firmware *cont, void *context)
 			mutex_unlock(&tfa98xx_mutex);
 			kfree(container);
 			dev_err(tfa98xx->dev, "Cannot load container file, aborting\n");
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-			mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-					FEEDBACK_DELAY_60S, "Cannot load container file, aborting");
-#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 			return;
 		}
 
@@ -3933,10 +3692,6 @@ static void tfa98xx_container_loaded(const struct firmware *cont, void *context)
 
 	if (tfa_dev_probe(tfa98xx->i2c->addr, tfa98xx->tfa) != 0) {
 		dev_err(tfa98xx->dev, "Failed to probe TFA98xx @ 0x%.2x\n", tfa98xx->i2c->addr);
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-		mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-				FEEDBACK_DELAY_60S, "Failed to probe TFA98xx @ 0x%.2x", tfa98xx->i2c->addr);
-#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 		return;
 	}
 
@@ -4719,14 +4474,6 @@ static int tfa98xx_mute(struct snd_soc_dai *dai, int mute, int stream)
 		 * are deactivated
 		 */
 
-		#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-		if (g_chk_err && (tfa98xx->dsp_init != TFA98XX_DSP_INIT_STOPPED)) {
-			tfa98xx_check_status_reg();
-			tfa98xx_check_speaker_status(tfa98xx);
-			g_chk_err = false;
-		}
-		#endif /* CONFIG_OPLUS_FEATURE_MM_FEEDBACK */
-
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			tfa98xx->pstream = 0;
 		else
@@ -4903,11 +4650,6 @@ static int tfa98xx_probe(struct snd_soc_component *component)
 	snd_soc_add_component_controls(tfa98xx->component,
 		tfadsp_volume_controls, ARRAY_SIZE(tfadsp_volume_controls));
 	#endif /* OPLUS_FEATURE_FADE_IN */
-
-	#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-	snd_soc_add_component_controls(tfa98xx->component,
-				   tfa98xx_check_feedback, ARRAY_SIZE(tfa98xx_check_feedback));
-	#endif
 
 	dev_info(component->dev, "tfa98xx codec registered (%s) ret=%d",
 							tfa98xx->fw.name, ret);
@@ -5176,10 +4918,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	tfa98xx->regmap = devm_regmap_init_i2c(i2c, &tfa98xx_regmap);
 	if (IS_ERR(tfa98xx->regmap)) {
 		ret = PTR_ERR(tfa98xx->regmap);
-		#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-		mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-				FEEDBACK_DELAY_60S, "Failed to allocate register map: %d", ret);
-		#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 		dev_err(&i2c->dev, "Failed to allocate register map: %d\n",
 			ret);
 		return ret;
@@ -5194,10 +4932,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 	if (IS_ERR(tfa98xx->tfa98xx_vdd)) {
 		printk("regulator tfa98xx_vdd get failed\n ");
 		devm_kfree(&i2c->dev, tfa98xx);
-		#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-		mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-				FEEDBACK_DELAY_60S, "regulator tfa98xx_vdd get failed");
-		#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 		return PTR_ERR(tfa98xx->tfa98xx_vdd);
 	} else {
 		if (regulator_count_voltages(tfa98xx->tfa98xx_vdd) > 0) {
@@ -5229,10 +4963,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 					"Regulator set tfa98xx_vdd failed ret=%d\n", ret);
 				regulator_put(tfa98xx->tfa98xx_vdd);
 				devm_kfree(&i2c->dev, tfa98xx);
-				#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-				mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-						FEEDBACK_DELAY_60S, "Regulator set tfa98xx_vdd failed ret=%d", ret);
-				#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 				return ret;
 			}
 
@@ -5242,10 +4972,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 				dev_err(&i2c->dev, "failed to set tfa98xx_vdd mode ret = %d\n", ret);
 				regulator_put(tfa98xx->tfa98xx_vdd);
 				devm_kfree(&i2c->dev, tfa98xx);
-				#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-				mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-						FEEDBACK_DELAY_60S, "failed to set tfa98xx_vdd mode ret = %d", ret);
-				#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 				return ret;
 			}
 		}
@@ -5256,10 +4982,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 		printk("regulator_enable tfa98xx->tfa98xx_vdd failed\n");
 		regulator_put(tfa98xx->tfa98xx_vdd);
 		devm_kfree(&i2c->dev, tfa98xx);
-		#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-		mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-				FEEDBACK_DELAY_60S, "regulator_enable tfa98xx->tfa98xx_vdd failed");
-		#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 		return ret;
 	}
 	#endif /* OPLUS_ARCH_EXTENDS */
@@ -5332,18 +5054,12 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 			tfa98xx->flags |= TFA98XX_FLAG_CALIBRATION_CTL;
 			tfa98xx->flags |= TFA98XX_FLAG_TDM_DEVICE;
 			tfa98xx->flags |= TFA98XX_FLAG_ADAPT_NOISE_MODE; /***MCH_TO_TEST***/
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-			g_pa_type = PA_TFA9873;
-#endif
 			break;
 		case 0x74: /* tfa9874 */
 			pr_info("TFA9874 detected\n");
 			tfa98xx->flags |= TFA98XX_FLAG_MULTI_MIC_INPUTS;
 			tfa98xx->flags |= TFA98XX_FLAG_CALIBRATION_CTL;
 			tfa98xx->flags |= TFA98XX_FLAG_TDM_DEVICE;
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-			g_pa_type = PA_TFA9874;
-#endif
 			break;
 		case 0x88: /* tfa9888 */
 			pr_info("TFA9888 detected\n");
@@ -5387,10 +5103,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 			tfa98xx->flags |= TFA98XX_FLAG_TDM_DEVICE;
 			break;
 		default:
-			#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-			mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-					FEEDBACK_DELAY_60S, "Unsupported device revision 0x%x", reg);
-			#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 			pr_info("Unsupported device revision (0x%x)\n", reg & 0xff);
 			return -EINVAL;
 		}
@@ -5473,10 +5185,6 @@ static int tfa98xx_i2c_probe(struct i2c_client *i2c,
 
 	if (ret < 0) {
 		dev_err(&i2c->dev, "Failed to register TFA98xx: %d\n", ret);
-		#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-		mm_fb_audio_kevent_named_delay(OPLUS_AUDIO_EVENTID_SMARTPA_ERR, MM_FB_KEY_RATELIMIT_5MIN, \
-				FEEDBACK_DELAY_60S, "Failed to register TFA98xx: %d", ret);
-		#endif /*CONFIG_OPLUS_FEATURE_MM_FEEDBACK*/
 		return ret;
 	}
 #if 0

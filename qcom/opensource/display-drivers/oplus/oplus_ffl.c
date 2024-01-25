@@ -16,9 +16,6 @@
 #include "oplus_onscreenfingerprint.h"
 #endif /* OPLUS_FEATURE_DISPLAY_ONSCREENFINGERPRINT */
 
-/*#include "oplus_mm_kevent_fb.h"*/
-
-
 #define FFL_LEVEL_START 2
 #define FFL_LEVEL_END  236
 #define FFLUPRARE  1
@@ -56,12 +53,6 @@ void oplus_ffl_set(int enable)
 	}
 
 	mutex_unlock(&oplus_ffl_lock);
-
-	if ((is_ffl_enable == FFL_TRIGGLE_CONTROL) && ffl_work_running) {
-		/*scnprintf(payload, sizeof(payload), "NULL$$EventID@@%d$$fflset@@%d",
-			  OPLUS_MM_DIRVER_FB_EVENT_ID_FFLSET, enable);
-		upload_mm_kevent_fb_data(OPLUS_MM_DIRVER_FB_EVENT_MODULE_DISPLAY, payload);*/
-	}
 }
 
 int oplus_display_panel_get_ffl(void *buf)

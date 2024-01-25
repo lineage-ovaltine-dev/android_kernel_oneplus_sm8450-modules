@@ -14,7 +14,6 @@
 #include "cam_packet_util.h"
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
 #include "oplus_cam_sensor_core.h"
-#include "oplus_cam_kevent_fb.h"
 #endif
 
 static int cam_sensor_update_req_mgr(
@@ -879,8 +878,7 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	uint64_t ms, sec, min, hrs;
 	char trace[64] = {0};
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
-        int32_t sensor_temp;
-        char fb_payload[PAYLOAD_LENGTH] = {0};
+  int32_t sensor_temp;
 #endif
 	if (!s_ctrl || !arg) {
 		CAM_ERR(CAM_SENSOR, "s_ctrl is NULL");
@@ -1022,7 +1020,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				s_ctrl->sensordata->slave_info.sensor_id);
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
 			mutex_lock(&(s_ctrl->sensor_power_state_mutex));
-			KEVENT_FB_SNESOR_PROBE_FAILED(fb_payload, "sensor match failed", s_ctrl->sensordata->slave_info.sensor_id);
 			cam_sensor_power_down(s_ctrl);
 			CAM_INFO(CAM_SENSOR, "sensor power down!");
 			msleep(20);
