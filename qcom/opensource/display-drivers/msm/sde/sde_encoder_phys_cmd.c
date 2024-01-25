@@ -16,11 +16,7 @@
 
 #ifdef OPLUS_FEATURE_DISPLAY
 #include "../oplus/oplus_adfr.h"
-#include <soc/oplus/system/oplus_mm_kevent_fb.h>
 #endif /* OPLUS_FEATURE_DISPLAY */
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
-#include <soc/oplus/dfr/theia_send_event.h> /* for theia_send_event etc */
-#endif
 
 #ifdef OPLUS_FEATURE_DISPLAY_ONSCREENFINGERPRINT
 #include "../oplus/oplus_onscreenfingerprint.h"
@@ -1832,12 +1828,6 @@ static int _sde_encoder_phys_cmd_handle_wr_ptr_timeout(
 		SDE_ERROR_CMDENC(cmd_enc,
 			"wr_ptr_irq wait failed, switch_te:%d\n", switch_te);
 		SDE_EVT32(DRMID(phys_enc->parent), switch_te, SDE_EVTLOG_ERROR);
-#ifdef OPLUS_FEATURE_DISPLAY
-		SDE_MM_ERROR("DisplayDriverID@@418$$wr_ptr_irq timeout failed, switch_te=%d\n", switch_te);
-#endif /* OPLUS_FEATURE_DISPLAY */
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
-		theia_send_event(THEIA_EVENT_PTR_TIMEOUT_HANG, THEIA_LOGINFO_KERNEL_LOG, current->pid, "wr_ptr_irq timeout failed");
-#endif
 
 		if (sde_encoder_phys_cmd_is_master(phys_enc) &&
 			atomic_add_unless(

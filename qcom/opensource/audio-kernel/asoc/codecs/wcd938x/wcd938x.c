@@ -28,18 +28,6 @@
 #include "internal.h"
 #include "asoc/bolero-slave-internal.h"
 
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_MM_FEEDBACK)
-#include "feedback/oplus_audio_kernel_fb.h"
-#ifdef dev_err
-#undef dev_err
-#define dev_err dev_err_fb_delay
-#endif
-#ifdef pr_err
-#undef pr_err
-#define pr_err pr_err_fb_delay
-#endif
-#endif /* CONFIG_OPLUS_FEATURE_MM_FEEDBACK */
-
 #define NUM_SWRS_DT_PARAMS 5
 #define WCD938X_VARIANT_ENTRY_SIZE 32
 

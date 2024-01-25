@@ -31,7 +31,6 @@
 #include "cam_compat.h"
 
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
-#include "oplus_cam_kevent_fb.h"
 #define CAM_REQ_MGR_EVENT_MAX 90
 #else
 #define CAM_REQ_MGR_EVENT_MAX 30
@@ -985,18 +984,12 @@ struct platform_driver cam_req_mgr_driver = {
 
 int cam_req_mgr_init(void)
 {
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-	cam_event_proc_init();
-#endif
 	return platform_driver_register(&cam_req_mgr_driver);
 }
 EXPORT_SYMBOL(cam_req_mgr_init);
 
 void cam_req_mgr_exit(void)
 {
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-	cam_event_proc_exit();
-#endif
 	platform_driver_unregister(&cam_req_mgr_driver);
 }
 
