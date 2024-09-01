@@ -36,10 +36,8 @@ int oplus_panel_parse_bl_config(struct dsi_panel *panel)
 		DSI_INFO("[%s] oplus,dsi-brightness-normal-max-level undefined, default to brightness max\n",
 				panel->name);
 		panel->bl_config.brightness_normal_max_level = panel->bl_config.brightness_max_level;
-		panel->bl_config.oplus_record_bl = panel->bl_config.brightness_max_level;
 	} else {
 		panel->bl_config.brightness_normal_max_level = val;
-		panel->bl_config.oplus_record_bl = val;
 	}
 	DSI_INFO("[%s] brightness_normal_max_level=%d\n",
 			panel->name, panel->bl_config.brightness_normal_max_level);

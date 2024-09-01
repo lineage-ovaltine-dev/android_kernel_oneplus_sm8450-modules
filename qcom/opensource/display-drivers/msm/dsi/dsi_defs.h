@@ -297,11 +297,17 @@ enum dsi_cmd_set_type {
 	DSI_CMD_SET_POST_TIMING_SWITCH,
 	DSI_CMD_SET_QSYNC_ON,
 	DSI_CMD_SET_QSYNC_OFF,
+#ifdef OPLUS_FEATURE_DISPLAY_TEMP_COMPENSATION
+	DSI_CMD_READ_TEMP_COMPENSATION_REG,
+	DSI_CMD_TEMPERATURE_COMPENSATION,
+#endif /* OPLUS_FEATURE_DISPLAY_TEMP_COMPENSATION */
 #ifdef OPLUS_FEATURE_DISPLAY_ONSCREENFINGERPRINT
 	DSI_CMD_HBM_ON,
 	DSI_CMD_HBM_OFF,
 	DSI_CMD_AOR_ON,
 	DSI_CMD_AOR_OFF,
+	DSI_CMD_SET_LP1_HPWM,
+	DSI_CMD_SET_NOLP_HPWM,
 	DSI_CMD_AOD_HIGH_LIGHT_MODE,
 	DSI_CMD_AOD_LOW_LIGHT_MODE,
 	DSI_CMD_ULTRA_LOW_POWER_AOD_ON,
@@ -335,10 +341,6 @@ enum dsi_cmd_set_type {
 	DSI_CMD_HBM_ENTER_SWITCH,
 	DSI_CMD_HBM_EXIT_SWITCH,
 	DSI_CMD_SKIPFRAME_DBV,
-	DSI_CMD_TEMPERATURE_COMPENSATION,
-	DSI_CMD_READ_COMPENSATION_REG1,
-	DSI_CMD_SET_BL_3PLUS,
-	DSI_CMD_SET_BL_16PLUS,
 	DSI_CMD_RESET_SCANLINE,
 	DSI_CMD_RECOVERY_SCANLINE,
 	DSI_CMD_SWITCH_AVDD,
@@ -349,7 +351,8 @@ enum dsi_cmd_set_type {
 	DSI_CMD_SET_TIMING_SWITCH_HIGH_FRE,
 	DSI_CMD_SET_TIMING_SWITCH_120,
 	DSI_CMD_SET_TIMING_SWITCH_120_HIGH_FRE,
-	DSI_CMD_SET_NOLP_HIGH_FRE,
+	DSI_CMD_SET_LPWM_PULSE,
+	DSI_CMD_SET_HPWM_PULSE,
 #endif /* OPLUS_FEATURE_DISPLAY */
 #ifdef OPLUS_FEATURE_DISPLAY
 	DSI_CMD_QSYNC_MIN_FPS_0,
@@ -608,6 +611,7 @@ struct dsi_host_common_cfg {
 	enum dsi_te_mode te_mode;
 	enum dsi_trigger_type mdp_cmd_trigger;
 	enum dsi_trigger_type dma_cmd_trigger;
+	enum dsi_trigger_type force_dma_cmd_trigger;
 	u32 cmd_trigger_stream;
 	enum dsi_color_swap_mode swap_mode;
 	bool bit_swap_red;
@@ -770,8 +774,10 @@ struct dsi_display_mode_priv_info {
 	 */
 	u32 vsync_width;
 	u32 vsync_period;
+	u32 async_bl_delay;
 #endif /* OPLUS_FEATURE_DISPLAY */
 #ifdef OPLUS_FEATURE_DISPLAY_ONSCREENFINGERPRINT
+	bool oplus_ofp_need_to_filter_backlight_dim_icon;
 	bool oplus_ofp_need_to_separate_backlight;
 	bool oplus_ofp_need_to_sync_data_in_aod_unlocking;
 	unsigned int oplus_ofp_backlight_on_period;

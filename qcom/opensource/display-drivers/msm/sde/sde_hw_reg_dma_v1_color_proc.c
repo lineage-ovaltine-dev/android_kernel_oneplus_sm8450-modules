@@ -4133,23 +4133,11 @@ void reg_dmav2_setup_dspp_igcv4(struct sde_hw_dspp *ctx, void *cfg)
 		data[j++] = (u16)(lut_cfg->c1[i] << 4);
 	}
 #if defined(CONFIG_PXLW_IRIS) || defined(CONFIG_PXLW_SOFT_IRIS)
-	// WA: set last IGC values
-	if (iris_is_chip_supported() || iris_is_softiris_supported()) {
-		data[j++] = (u16)(lut_cfg->c2_last << 4);
-		data[j++] = (u16)(lut_cfg->c0_last << 4);
-		data[j++] = (u16)(lut_cfg->c1_last << 4);
-	} else {
-		data[j++] = lut_cfg->c0_last ? (u16)(lut_cfg->c0_last << 4) : (u16)(4095 << 4);
-		data[j++] = lut_cfg->c1_last ? (u16)(lut_cfg->c1_last << 4) : (u16)(4095 << 4);
-		data[j++] = lut_cfg->c2_last ? (u16)(lut_cfg->c2_last << 4) : (u16)(4095 << 4);
-	}
 	iris_backlight_update++;
-#else
-	// set last IGC values
+#endif
+	data[j++] = lut_cfg->c2_last ? (u16)(lut_cfg->c2_last << 4) : (u16)(4095 << 4);
 	data[j++] = lut_cfg->c0_last ? (u16)(lut_cfg->c0_last << 4) : (u16)(4095 << 4);
 	data[j++] = lut_cfg->c1_last ? (u16)(lut_cfg->c1_last << 4) : (u16)(4095 << 4);
-	data[j++] = lut_cfg->c2_last ? (u16)(lut_cfg->c2_last << 4) : (u16)(4095 << 4);
-#endif
 	REG_DMA_SETUP_OPS(dma_write_cfg, 0, (u32 *)data, len,
 			REG_BLK_LUT_WRITE, 0, 0, 0);
 	/* table select is only relevant to SSPP Gamut */

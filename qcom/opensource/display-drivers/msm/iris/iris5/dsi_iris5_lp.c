@@ -1016,7 +1016,8 @@ exit_abyp_loop:
 		_iris_wait_prev_frame_done();
 		mutex_lock(&pcfg->panel->panel_lock);
 	}
-
+	if (iris_is_abyp_timing(&pcfg->panel->cur_mode->timing))
+		return false;
 	/* exit abyp */
 	abyp_status_gpio = iris_exit_abyp(false);
 	if (abyp_status_gpio == 0) {
@@ -1245,6 +1246,10 @@ bool iris_abypass_switch_proc(struct dsi_display *display, int mode, bool pendin
 		IRIS_LOGE("abyp can't be supported! rx_mode != tx_mode!");
 		return pt_mode;
 	}
+
+	if (iris_is_abyp_timing(&pcfg->panel->cur_mode->timing) &&
+		pcfg->abyp_ops.abyp_select(dest_mode) == PASS_THROUGH_MODE)
+		return pt_mode;
 
 	if (pending) {
 		mutex_lock(&pcfg->abypss_ctrl.abypass_mutex);

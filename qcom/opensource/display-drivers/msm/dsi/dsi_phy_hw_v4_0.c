@@ -435,11 +435,18 @@ static void dsi_phy_hw_dphy_enable(struct dsi_phy_hw *phy,
 	/* Configure PHY lane swap */
 	dsi_phy_hw_v4_0_lane_swap_config(phy, &cfg->lane_map);
 #ifdef OPLUS_FEATURE_DISPLAY
-	if(!strcmp(display->panel->name, "tianma nt37705 dsc cmd mode panel") || !strcmp(display->panel->oplus_priv.vendor_name, "TM_NT37705")
-		|| !strcmp(display->panel->oplus_priv.vendor_name, "TM_NT37705_DVT")){
+	if(!strcmp(display->panel->name, "tianma nt37705 dsc cmd mode panel")
+	|| !strcmp(display->panel->name, "senna ab575 04id tm nt37705 dsc cmd mode panel")
+	|| !strcmp(display->panel->name, "senna ab575 tm nt37705 dsc cmd mode panel")){
 		glbl_str_swi_cal_sel_ctrl = 0x01;
 		glbl_hstx_str_ctrl_0 = 0xFF;
 		vreg_ctrl_0 = 0x47;
+	}
+
+	if(!strcmp(display->panel->name, "senna22623 ab575 tm nt37705 dsc cmd mode panel")){
+		glbl_str_swi_cal_sel_ctrl = 0x01;
+		glbl_hstx_str_ctrl_0 = 0xBB;
+		vreg_ctrl_0 = 0x45;
 	}
 #endif
 	/* Enable LDO */
