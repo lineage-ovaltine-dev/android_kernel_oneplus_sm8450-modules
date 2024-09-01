@@ -14,6 +14,7 @@
 #include "dsi_iris_log.h"
 #include "dsi_iris_lp.h"
 #include "sde_connector.h"
+#include "dsi_iris_gpio.h"
 
 static void iris_set_esd_status(bool enable)
 {
@@ -42,6 +43,14 @@ static void iris_set_esd_status(bool enable)
 }
 
 static uint32_t iris_loop_back_flag = (BIT_PURE_LOOPBACK | BIT_DUAL_PT);
+
+void iris_loop_back_reset(void)
+{
+	iris_send_one_wired_cmd(IRIS_POWER_DOWN_SYS);
+	usleep_range(3500, 3501);
+	iris_send_one_wired_cmd(IRIS_POWER_UP_SYS);
+	usleep_range(3500, 3501);
+}
 
 /**
  * pure loop back
@@ -100,7 +109,7 @@ static int iris_pure_loop_back_verify(void)
 
 	IRIS_LOGD("%s(%d), start.", __func__, __LINE__);
 	iris_set_esd_status(false);
-	iris_reset();
+	iris_loop_back_reset();
 	mdelay(100);
 	mutex_lock(&pcfg->panel->panel_lock);
 	iris_set_two_wire0_enable();
@@ -199,7 +208,7 @@ static int iris_dual_pt_verify(void)
 
 	IRIS_LOGD("%s(%d), start.", __func__, __LINE__);
 	iris_set_esd_status(false);
-	iris_reset();
+	iris_loop_back_reset();
 	mdelay(100);
 	mutex_lock(&pcfg->panel->panel_lock);
 	iris_set_two_wire0_enable();
@@ -306,7 +315,7 @@ static int iris_atspeed_efifo_verify(void)
 	uint32_t statis[3] = {0};
 
 	IRIS_LOGD("%s(%d), start.", __func__, __LINE__);
-	iris_reset();
+	iris_loop_back_reset();
 	mdelay(100);
 	mutex_lock(&pcfg->panel->panel_lock);
 	iris_set_two_wire0_enable();
@@ -478,7 +487,7 @@ static int iris_smt_pmu_verify(void)
 	int ret = 0;
 
 	IRIS_LOGD("%s(%d), start.", __func__, __LINE__);
-	iris_reset();
+	iris_loop_back_reset();
 	mdelay(1);
 
 	IRIS_LOGD("%s(%d), s4 check.", __func__, __LINE__);
@@ -612,7 +621,7 @@ int iris_loop_back_validate(void)
 		}
 	}
 
-	iris_reset();
+	iris_loop_back_reset();
 	mdelay(10);
 	_iris_bulksram_power_domain_proc();
 	_iris_disable_temp_sensor();

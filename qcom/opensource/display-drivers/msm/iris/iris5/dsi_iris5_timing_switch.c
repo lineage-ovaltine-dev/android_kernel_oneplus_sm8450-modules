@@ -337,6 +337,26 @@ void iris_send_timing_switch_pkt(void)
 	SDE_ATRACE_END("iris_send_timing_switch_pkt");
 }
 
+static void iris_send_timing_special_switch_pkt(void)
+{
+	struct iris_ctrl_seq *pseq = &tm_switch_seq[TIMING_SWITCH_SPECIAL_SEQ];
+	struct iris_ctrl_opt *arr = NULL;
+
+	SDE_ATRACE_BEGIN("iris_send_timing_special_switch_pkt");
+	IRIS_LOGI("%s(), cmd list index: %02x", __func__, cmd_list_index);
+
+	if (pseq == NULL) {
+		IRIS_LOGE("%s(), seq is NULL", __func__);
+		SDE_ATRACE_END("iris_send_timing_special_switch_pkt");
+		return;
+	}
+	arr = pseq->ctrl_opt;
+
+	iris_send_assembled_pkt(arr, pseq->cnt);
+	udelay(100);
+	SDE_ATRACE_END("iris_send_timing_special_switch_pkt");
+}
+
 static uint32_t _iris_get_timing_index(const struct dsi_mode_info *timing)
 {
 	uint32_t i = 0;
@@ -398,23 +418,9 @@ uint32_t iris_generate_switch_case(struct dsi_panel *panel,
 }
 #endif
 
-static bool _iris_is_clock_switched(const struct dsi_mode_info *new_timing)
-{
-	struct dsi_mode_info *cur_timing = &panel_tm_arry[cur_tm_index];
-
-	IRIS_LOGD("%s(), switch clock from %llu to %llu",
-			__func__,
-			cur_timing->clk_rate_hz, new_timing->clk_rate_hz);
-
-	if (cur_timing->clk_rate_hz != new_timing->clk_rate_hz)
-		return true;
-
-	return false;
-}
-
 static bool _iris_is_res_switched(const struct dsi_mode_info *new_timing)
 {
-	struct dsi_mode_info *cur_timing = &panel_tm_arry[cur_tm_index];
+	struct dsi_mode_info *cur_timing = &panel_tm_arry[last_pt_tm_index];
 
 	IRIS_LOGD("%s(), switch resolution from %ux%u to %ux%u",
 			__func__,
@@ -433,17 +439,14 @@ static void _iris_switch_res(const struct dsi_mode_info *new_timing)
 	if (!_iris_is_res_switched(new_timing))
 		return;
 
-	if (_iris_is_clock_switched(new_timing))
-		return;
-
 	iris_send_timing_switch_pkt();
 }
 
 static bool _iris_is_freq_switched(const struct dsi_mode_info *new_timing)
 {
-	struct dsi_mode_info *cur_timing = &panel_tm_arry[cur_tm_index];
+	struct dsi_mode_info *cur_timing = &panel_tm_arry[last_pt_tm_index];
 
-	IRIS_LOGD("%s(), switch framerate from %u to %u",
+	IRIS_LOGI("%s(), switch framerate from %u to %u",
 			__func__,
 			cur_timing->refresh_rate, new_timing->refresh_rate);
 
@@ -534,7 +537,7 @@ static bool _iris_is_2nd_timing_enable(void)
 
 	return false;
 }
-
+#if 0
 static bool _iris_between_main_2nd(const struct dsi_mode_info *new_timing)
 {
 	uint32_t new_tm_idx = 0;
@@ -557,7 +560,7 @@ static bool _iris_between_main_2nd(const struct dsi_mode_info *new_timing)
 
 	return false;
 }
-
+#endif
 bool iris_belongs_to_2nd_timing(const struct dsi_mode_info *new_timing)
 {
 	uint32_t new_tm_idx = 0;
@@ -608,26 +611,6 @@ void iris_update_cur_timing(const struct dsi_mode_info *cur_timing)
 			cur_timing->refresh_rate, cur_tm_index);
 }
 
-static void _iris_switch_clock_rate(const struct dsi_mode_info *new_timing)
-{
-	if (!new_timing)
-		return;
-
-	if (!_iris_is_clock_switched(new_timing))
-		return;
-
-	IRIS_LOGI("%s(), switch clock to %llu",
-			__func__, new_timing->clk_rate_hz);
-
-	if (_iris_between_main_2nd(new_timing))
-		return;
-
-	iris_send_timing_switch_pkt();
-
-	iris_set_out_frame_rate(new_timing->refresh_rate);
-	iris_update_frc_fps(new_timing->refresh_rate & 0xFF);
-}
-
 static void _iris_switch_freq(const struct dsi_mode_info *new_timing)
 {
 	bool use_2nd_timing = false;
@@ -636,9 +619,6 @@ static void _iris_switch_freq(const struct dsi_mode_info *new_timing)
 		return;
 
 	if (!_iris_is_freq_switched(new_timing))
-		return;
-
-	if (_iris_is_clock_switched(new_timing) && !_iris_between_main_2nd(new_timing))
 		return;
 
 	use_2nd_timing = iris_belongs_to_2nd_timing(new_timing);
@@ -651,7 +631,7 @@ static void _iris_switch_freq(const struct dsi_mode_info *new_timing)
 		iris_send_ipopt_cmds(IRIS_IP_RX, use_2nd_timing ? 0xE1 : 0xE0);
 		iris_send_ipopt_cmds(IRIS_IP_TX, use_2nd_timing ? 0x4 : 0x0);
 	} else {
-		iris_send_timing_switch_pkt();
+		iris_send_timing_special_switch_pkt();
 	}
 
 	iris_set_out_frame_rate(new_timing->refresh_rate);
@@ -723,6 +703,7 @@ void iris_pre_switch(struct dsi_panel *panel,
 {
 	SDE_ATRACE_BEGIN(__func__);
 	switch_case = _iris_generate_switch_case(panel, new_timing);
+	iris_update_panel_ap_te(new_timing->refresh_rate);
 	IRIS_LOGI("%s(), post switch to: %ux%u@%uHz, cmd list index: %u, switch case: %s",
 			__func__,
 			new_timing->h_active,
@@ -731,6 +712,7 @@ void iris_pre_switch(struct dsi_panel *panel,
 			cmd_list_index,
 			switch_case_name[switch_case]);
 
+	cur_tm_index = new_tm_index;
 	SDE_ATRACE_END(__func__);
 	IRIS_LOGD("%s(), exit.", __func__);
 }
@@ -766,7 +748,6 @@ int iris_switch(struct dsi_panel *panel,
 
 	if (switch_case == SWITCH_PT_TO_PT) {
 		rc = iris_pt_send_panel_cmd(panel, switch_cmds);
-		_iris_switch_clock_rate(new_timing);
 		_iris_switch_freq(new_timing);
 		_iris_switch_res(new_timing);
 		if (panel->qsync_mode > 0)
