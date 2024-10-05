@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2021-2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2015-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -106,6 +106,7 @@ static void drm_mode_to_intf_timing_params(
 	timing->hsync_skew = mode->hskew;
 	timing->v_front_porch_fixed = vid_enc->base.vfp_cached;
 	timing->vrefresh = drm_mode_vrefresh(mode);
+	timing->fsc_mode = fsc_mode;
 
 	if (vid_enc->base.comp_type != MSM_DISPLAY_COMPRESSION_NONE) {
 		timing->compression_en = true;
@@ -232,6 +233,12 @@ static u32 programmable_fetch_get_num_lines(
 	m = phys_enc->sde_kms->catalog;
 	max_fps = sde_encoder_get_dfps_maxfps(phys_enc->parent);
 	vrefresh = (max_fps > timing->vrefresh) ? max_fps : timing->vrefresh;
+
+	/* Avoid programmable fetch config for xr targets,
+	 * with separate scid for left and right display
+	 */
+	if (test_bit(SDE_MDP_LLCC_DISP_LR, &m->mdp[0].features))
+		return 0;
 
 	/* minimum prefill lines are defined based on 60fps */
 	needed_prefill_lines = (vrefresh > fixed_prefill_fps) ?
@@ -404,24 +411,15 @@ static void sde_encoder_phys_vid_setup_timing_engine(
 	struct intf_timing_params timing_params = { 0 };
 	const struct sde_format *fmt = NULL;
 	u32 fmt_fourcc = DRM_FORMAT_RGB888;
-	u64 modifier = 0;
 	u32 qsync_min_fps = 0;
 	unsigned long lock_flags;
 	struct sde_hw_intf_cfg intf_cfg = { 0 };
 	bool is_split_link = false;
-	struct sde_connector_state *c_state = NULL;
 
 	if (!phys_enc || !phys_enc->sde_kms || !phys_enc->hw_ctl ||
-			!phys_enc->hw_intf || !phys_enc->connector ||
-			!phys_enc->connector->state) {
+			!phys_enc->hw_intf || !phys_enc->connector) {
 		SDE_ERROR("invalid encoder %d\n", !phys_enc);
 		return;
-	}
-
-	c_state = to_sde_connector_state(phys_enc->connector->state);
-	if (msm_is_mode_fsc(&c_state->msm_mode)) {
-		fmt_fourcc = DRM_FORMAT_C8;
-		modifier = DRM_FORMAT_MOD_QCOM_FSC_TILE;
 	}
 
 	mode = phys_enc->cached_mode;
@@ -465,8 +463,8 @@ static void sde_encoder_phys_vid_setup_timing_engine(
 		goto exit;
 	}
 
-	fmt = sde_get_sde_format_ext(fmt_fourcc, modifier);
-	SDE_DEBUG_VIDENC(vid_enc, "fmt_fourcc 0x%X modifier 0x%X\n", fmt_fourcc, modifier);
+	fmt = sde_get_sde_format(fmt_fourcc);
+	SDE_DEBUG_VIDENC(vid_enc, "fmt_fourcc 0x%X\n", fmt_fourcc);
 
 	spin_lock_irqsave(phys_enc->enc_spinlock, lock_flags);
 	phys_enc->hw_intf->ops.setup_timing_gen(phys_enc->hw_intf,

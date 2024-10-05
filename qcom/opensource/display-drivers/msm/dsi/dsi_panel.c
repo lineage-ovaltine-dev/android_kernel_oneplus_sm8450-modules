@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2021-2022, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2023, Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -910,7 +910,6 @@ static int dsi_panel_update_backlight(struct dsi_panel *panel,
 #ifdef OPLUS_FEATURE_DISPLAY
 	oplus_panel_update_backlight(panel, dsi, bl_lvl);
 #endif /* OPLUS_FEATURE_DISPLAY */
-
 	if (unlikely(panel->bl_config.lp_mode))
 		dsi->mode_flags = mode_flags;
 
@@ -3203,6 +3202,17 @@ static int dsi_panel_parse_bl_config(struct dsi_panel *panel)
 		panel->bl_config.brightness_max_level = val;
 	}
 
+	rc = utils->read_u32(utils->data, "qcom,mdss-dsi-bl-ctrl-dcs-subtype",
+		&val);
+	if (rc) {
+		DSI_DEBUG("[%s] bl-ctrl-dcs-subtype, defautling to zero\n",
+			panel->name);
+		panel->bl_config.bl_dcs_subtype = 0;
+		rc = 0;
+	} else {
+		panel->bl_config.bl_dcs_subtype = val;
+	}
+
 	panel->bl_config.bl_inverted_dbv = utils->read_bool(utils->data,
 		"qcom,mdss-dsi-bl-inverted-dbv");
 
@@ -3389,6 +3399,17 @@ static int dsi_panel_parse_dsc_params(struct dsi_display_mode *mode,
 
 	priv_info->dsc.config.pic_width = mode->timing.h_active;
 	priv_info->dsc.config.pic_height = mode->timing.v_active;
+
+	rc = utils->read_u32(utils->data, "qcom,mdss-dsc-pic-width-slice", &data);
+	if (rc) {
+		DSI_DEBUG("failed to parse qcom,mdss-dsc-pic-width-slice, defaulting to 1\n");
+		rc = 0;
+		data = 1;
+	} else if (!data || (data > 2)) {
+		DSI_ERR("invalid dsc pic-width-slice:%d\n", data);
+		goto error;
+	}
+	priv_info->dsc.dsc_pic_width_slice = data;
 
 	rc = utils->read_u32(utils->data, "qcom,mdss-dsc-slice-per-pkt", &data);
 	if (rc) {

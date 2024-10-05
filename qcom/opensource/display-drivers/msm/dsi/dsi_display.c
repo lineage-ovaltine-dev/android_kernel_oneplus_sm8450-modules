@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
  */
 
@@ -1084,6 +1084,7 @@ static int dsi_display_status_check_te(struct dsi_display *display,
 					esd_te_timeout)) {
 			DSI_ERR("TE check failed\n");
 			dsi_display_change_te_irq_status(display, false);
+			dsi_display_release_te_irq(display);
 			return -EINVAL;
 		}
 	}
@@ -2355,7 +2356,7 @@ static void adjust_timing_by_ctrl_count(const struct dsi_display *display,
 	} else {
 		if (mode->priv_info->dsc_enabled)
 			mode->priv_info->dsc.config.pic_width =
-				mode->timing.h_active;
+				mode->timing.h_active / mode->priv_info->dsc.dsc_pic_width_slice;
 		mode->timing.h_active /= display->ctrl_count;
 		mode->timing.h_front_porch /= display->ctrl_count;
 		mode->timing.h_sync_width /= display->ctrl_count;
@@ -5638,6 +5639,22 @@ int dsi_display_cont_splash_config(void *dsi_display)
 
 	display->is_cont_splash_enabled = true;
 
+	/*
+	 * Vote on panel regulator is added to make sure panel regulators are ON
+	 * for cont-splash enabled usecase in case of hibernate exit.
+	 */
+	if (display->is_hibernate_splash_enabled) {
+		display->is_hibernate_exit = true;
+		rc = dsi_pwr_enable_regulator(&display->panel->power_info, true);
+		if (rc)
+			DSI_ERR("[%s] failed to disable vregs, rc=%d\n",
+					display->panel->name, rc);
+
+	}
+
+	if (!display->is_hibernate_splash_enabled)
+		display->is_hibernate_splash_enabled = true;
+
 	/* Update splash status for clock manager */
 	dsi_display_clk_mngr_update_splash_status(display->clk_mngr,
 				display->is_cont_splash_enabled);
@@ -8640,6 +8657,12 @@ int dsi_display_prepare(struct dsi_display *display)
 	/* Set up ctrl isr before enabling core clk */
 	if (!display->trusted_vm_env)
 		dsi_display_ctrl_isr_configure(display, true);
+
+	/* Unset DMS flag in case of hibernate exit */
+	if (display->is_hibernate_exit) {
+		mode->dsi_mode_flags &= ~DSI_MODE_FLAG_DMS;
+		display->is_hibernate_exit = false;
+	}
 
 	if (mode->dsi_mode_flags & DSI_MODE_FLAG_DMS) {
 		if (display->is_cont_splash_enabled &&

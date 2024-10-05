@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2021-2023, Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -40,6 +40,11 @@
 
 #define dp_display_state_show(x) { \
 	DP_ERR("%s: state (0x%x): %s\n", x, dp->state, \
+		dp_display_state_name(dp->state)); \
+	SDE_EVT32_EXTERNAL(dp->state); }
+
+#define dp_display_state_warn(x) { \
+	DP_WARN("%s: state (0x%x): %s\n", x, dp->state, \
 		dp_display_state_name(dp->state)); \
 	SDE_EVT32_EXTERNAL(dp->state); }
 
@@ -1141,7 +1146,7 @@ static int dp_display_host_ready(struct dp_display_private *dp)
 static void dp_display_host_unready(struct dp_display_private *dp)
 {
 	if (!dp_display_state_is(DP_STATE_INITIALIZED)) {
-		dp_display_state_show("[not initialized]");
+		dp_display_state_warn("[not initialized]");
 		return;
 	}
 
@@ -1631,10 +1636,6 @@ static void dp_display_disconnect_sync(struct dp_display_private *dp)
 	cancel_work_sync(&dp->connect_work);
 	cancel_work_sync(&dp->attention_work);
 	flush_workqueue(dp->wq);
-
-	if (!dp->debug->sim_mode && !dp->parser->no_aux_switch
-	    && !dp->parser->gpio_aux_switch)
-		dp->aux->aux_switch(dp->aux, false, ORIENTATION_NONE);
 
 	/*
 	 * Delay the teardown of the mainlink for better interop experience.
@@ -2405,10 +2406,10 @@ static int dp_display_prepare(struct dp_display *dp_display, void *panel)
 
 	/*
 	 * If DP_STATE_ENABLED, there is nothing left to do.
-	 * However, this should not happen ideally. So, log this.
+	 * This would happen during MST flow. So, log this.
 	 */
 	if (dp_display_state_is(DP_STATE_ENABLED)) {
-		dp_display_state_show("[already enabled]");
+		dp_display_state_warn("[already enabled]");
 		goto end;
 	}
 
