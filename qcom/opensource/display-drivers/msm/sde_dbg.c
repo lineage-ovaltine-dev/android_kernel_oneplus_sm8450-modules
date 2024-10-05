@@ -1329,34 +1329,7 @@ void sde_dbg_ctrl(const char *name, ...)
 ssize_t oplus_sde_evtlog_dump_read(struct file *file, char __user *buff,
 		size_t count, loff_t *ppos)
 {
-	ssize_t len = 0;
-	char evtlog_buf[SDE_EVTLOG_BUF_MAX];
-
-	if (!buff || !ppos)
-		return -EINVAL;
-
-	mutex_lock(&sde_dbg_base.mutex);
-	sde_dbg_base.cur_evt_index = 0;
-	sde_dbg_base.evtlog->first = (u32)atomic_add_return(0, &sde_dbg_base.evtlog->curr) + 1;
-	sde_dbg_base.evtlog->last =
-		sde_dbg_base.evtlog->first + SDE_EVTLOG_ENTRY;
-
-	len = sde_evtlog_dump_to_buffer(sde_dbg_base.evtlog,
-			evtlog_buf, SDE_EVTLOG_BUF_MAX,
-			!sde_dbg_base.cur_evt_index, true);
-	sde_dbg_base.cur_evt_index++;
-	mutex_unlock(&sde_dbg_base.mutex);
-
-	if (len < 0 || len > count) {
-		pr_err("len is more than user buffer size");
-		return 0;
-	}
-
-	if (copy_to_user(buff, evtlog_buf, len))
-		return -EFAULT;
-	*ppos += len;
-
-	return len;
+	return 0;
 }
 EXPORT_SYMBOL(oplus_sde_evtlog_dump_read);
 #endif /* OPLUS_FEATURE_DISPLAY */
