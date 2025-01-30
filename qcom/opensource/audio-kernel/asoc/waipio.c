@@ -440,6 +440,7 @@ static int msm_wcn_init(struct snd_soc_pcm_runtime *rtd)
 	return ret;
 }
 
+#if 0
 static int msm_wcn_init_btfm(struct snd_soc_pcm_runtime *rtd)
 {
 	unsigned int rx_ch[WCN_CDC_SLIM_RX_CH_MAX] = {157, 158};
@@ -455,6 +456,7 @@ static int msm_wcn_init_btfm(struct snd_soc_pcm_runtime *rtd)
 	msm_common_dai_link_init(rtd);
 	return ret;
 }
+#endif
 
 static struct snd_info_entry *msm_snd_info_create_subdir(struct module *mod,
 				const char *name,
@@ -587,6 +589,7 @@ static struct snd_soc_dai_link msm_wcn_be_dai_links[] = {
 	},
 };
 
+#if 0
 static struct snd_soc_dai_link msm_wcn_btfm_be_dai_links[] = {
 	{
 		.name = LPASS_BE_SLIMBUS_7_RX,
@@ -622,6 +625,7 @@ static struct snd_soc_dai_link msm_wcn_btfm_be_dai_links[] = {
 		SND_SOC_DAILINK_REG(slimbus_8_tx),
 	},
 };
+#endif
 
 static struct snd_soc_dai_link ext_disp_be_dai_link[] = {
 	/* DISP PORT BACK END DAI Link */
@@ -683,6 +687,7 @@ static struct snd_soc_dai_link msm_hac_wsa_cdc_dma_be_dai_links[] = {
 	},
 };
 
+#if 0
 static struct snd_soc_dai_link msm_wsa_cdc_dma_be_dai_links[] = {
 	/* WSA CDC DMA Backend DAI Links */
 	{
@@ -831,6 +836,7 @@ static struct snd_soc_dai_link msm_wsa_wsa2_cdc_dma_be_dai_links[] = {
 		SND_SOC_DAILINK_REG(wsa_wsa2_vi_feedback),
 	},
 };
+#endif
 
 static struct snd_soc_dai_link msm_rx_tx_cdc_dma_be_dai_links[] = {
 	/* RX CDC DMA Backend DAI Links */
@@ -1122,6 +1128,7 @@ static struct snd_soc_dai_link msm_mi2s_dai_links[] = {
 	},
 };
 
+#if 0
 static struct snd_soc_dai_link msm_tdm_dai_links[] = {
 	{
 		.name = LPASS_BE_PRI_TDM_RX_0,
@@ -1250,19 +1257,21 @@ static struct snd_soc_dai_link msm_tdm_dai_links[] = {
 		SND_SOC_DAILINK_REG(sen_tdm_tx_0),
 	},
 };
+#endif
 
 static struct snd_soc_dai_link msm_waipio_dai_links[
-			ARRAY_SIZE(msm_wsa_cdc_dma_be_dai_links) +
-			ARRAY_SIZE(msm_wsa2_cdc_dma_be_dai_links) +
-			ARRAY_SIZE(msm_wsa_wsa2_cdc_dma_be_dai_links) +
+			//ARRAY_SIZE(msm_wsa_cdc_dma_be_dai_links) +
+			//ARRAY_SIZE(msm_wsa2_cdc_dma_be_dai_links) +
+			//ARRAY_SIZE(msm_wsa_wsa2_cdc_dma_be_dai_links) +
 			ARRAY_SIZE(msm_rx_tx_cdc_dma_be_dai_links) +
 			ARRAY_SIZE(msm_va_cdc_dma_be_dai_links) +
 			ARRAY_SIZE(ext_disp_be_dai_link) +
 			ARRAY_SIZE(msm_common_be_dai_links) +
 			ARRAY_SIZE(msm_wcn_be_dai_links) +
-			ARRAY_SIZE(msm_wcn_btfm_be_dai_links) +
-			ARRAY_SIZE(msm_mi2s_dai_links) +
-			ARRAY_SIZE(msm_tdm_dai_links)];
+			//ARRAY_SIZE(msm_wcn_btfm_be_dai_links) +
+			ARRAY_SIZE(msm_mi2s_dai_links)
+			//ARRAY_SIZE(msm_tdm_dai_links)
+		];
 
 
 static int msm_populate_dai_link_component_of_node(
@@ -1511,6 +1520,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 			total_links +=
 				ARRAY_SIZE(msm_rx_tx_cdc_dma_be_dai_links);
 
+#if 0
 			switch (pdata->wsa_max_devs) {
 			case MONO_SPEAKER:
 			case STEREO_SPEAKER:
@@ -1536,7 +1546,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 					__func__, pdata->wsa_max_devs);
 				break;
 			}
-
+#endif
 		}
 		memcpy(msm_waipio_dai_links + total_links,
 		       msm_va_cdc_dma_be_dai_links,
@@ -1563,6 +1573,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 			total_links += ARRAY_SIZE(msm_mi2s_dai_links);
 		}
 
+#if 0
 		rc = of_property_read_u32(dev->of_node,
 				"qcom,tdm-audio-intf", &val);
 		if (!rc && val) {
@@ -1571,6 +1582,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 					sizeof(msm_tdm_dai_links));
 			total_links += ARRAY_SIZE(msm_tdm_dai_links);
 		}
+#endif
 
 		rc = of_property_read_u32(dev->of_node,
 					   "qcom,ext-disp-audio-rx", &val);
@@ -1593,6 +1605,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 			total_links += ARRAY_SIZE(msm_wcn_be_dai_links);
 		}
 
+#if 0
 		rc = of_property_read_u32(dev->of_node, "qcom,wcn-btfm", &val);
 		if (!rc && val) {
 			dev_dbg(dev, "%s(): WCN BT FM support present\n",
@@ -1602,6 +1615,7 @@ static struct snd_soc_card *populate_snd_card_dailinks(struct device *dev,
 			       sizeof(msm_wcn_btfm_be_dai_links));
 			total_links += ARRAY_SIZE(msm_wcn_btfm_be_dai_links);
 		}
+#endif
 
 		dailink = msm_waipio_dai_links;
 	} else if(!strcmp(match->data, "stub_codec")) {
