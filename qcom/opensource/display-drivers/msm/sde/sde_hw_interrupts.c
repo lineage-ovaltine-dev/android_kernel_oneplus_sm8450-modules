@@ -669,32 +669,6 @@ static int sde_hw_intr_get_interrupt_sources(struct sde_hw_intr *intr,
 	return 0;
 }
 
-static void sde_hw_intr_clear_intr_status_nolock(struct sde_hw_intr *intr,
-		int irq_idx)
-{
-	int reg_idx;
-
-	if (!intr)
-		return;
-
-	if (irq_idx >= intr->sde_irq_map_size || irq_idx < 0) {
-		pr_err("invalid IRQ index: [%d]\n", irq_idx);
-		return;
-	}
-
-	reg_idx = intr->sde_irq_map[irq_idx].reg_idx;
-	if (reg_idx < 0 || reg_idx > intr->sde_irq_size) {
-		pr_err("invalid irq reg:%d irq:%d\n", reg_idx, irq_idx);
-		return;
-	}
-
-	SDE_REG_WRITE(&intr->hw, intr->sde_irq_tbl[reg_idx].clr_off,
-			intr->sde_irq_map[irq_idx].irq_mask);
-
-	/* ensure register writes go through */
-	wmb();
-}
-
 static void sde_hw_intr_clear_interrupt_status(struct sde_hw_intr *intr,
 		int irq_idx)
 {
