@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_CCI_DEV_H_
@@ -51,13 +52,8 @@
 #define CCI_READ_MAX 256
 #define CCI_READ_MAX_V_1_2 0xE
 #define CCI_I2C_READ_MAX_RETRIES 3
-#ifndef OPLUS_FEATURE_CAMERA_COMMON
 #define CCI_I2C_MAX_READ 20480
 #define CCI_I2C_MAX_WRITE 20480
-#else
-#define CCI_I2C_MAX_READ 30720
-#define CCI_I2C_MAX_WRITE 30720
-#endif
 #define CCI_I2C_MAX_BYTE_COUNT 65535
 
 #define CAMX_CCI_DEV_NAME "cam-cci-driver"
@@ -321,7 +317,4 @@ int cam_cci_init_module(void);
  * @brief : API to remove CCI Hw from platform framework.
  */
 void cam_cci_exit_module(void);
-#define VIDIOC_MSM_CCI_CFG \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 23, struct cam_cci_ctrl)
-
 #endif /* _CAM_CCI_DEV_H_ */

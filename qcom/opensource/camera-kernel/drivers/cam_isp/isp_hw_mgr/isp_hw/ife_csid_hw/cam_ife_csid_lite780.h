@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2020-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_IFE_CSID_LITE_780_H_
@@ -274,7 +275,7 @@ static const struct cam_ife_csid_top_irq_desc cam_ife_csid_lite_780_top_irq_desc
 	},
 };
 
-static struct cam_irq_register_set cam_ife_csid_lite_780_irq_reg_set[9] = {
+static struct cam_irq_register_set cam_ife_csid_lite_780_irq_reg_set[7] = {
 	/* Top */
 	{
 		.mask_reg_offset   = 0x00000080,
@@ -311,14 +312,12 @@ static struct cam_irq_register_set cam_ife_csid_lite_780_irq_reg_set[9] = {
 		.clear_reg_offset  = 0x00000124,
 		.status_reg_offset = 0x0000011C,
 	},
-	{}, /* no RDI4 */
 	/* IPP */
 	{
 		.mask_reg_offset   = 0x000000B0,
 		.clear_reg_offset  = 0x000000B4,
 		.status_reg_offset = 0x000000AC,
 	},
-	{}, /* no PPP */
 };
 
 static struct cam_irq_controller_reg_info cam_ife_csid_lite_780_irq_reg_info = {
@@ -418,6 +417,7 @@ static struct cam_ife_csid_ver2_common_reg_info
 	.top_buf_done_irq_mask                        = 0x2000,
 	.decode_format_payload_only                   = 0xF,
 	.timestamp_enabled_in_cfg0                    = true,
+	.camif_irq_support                            = true,
 };
 
 static struct cam_ife_csid_csi2_rx_reg_info
@@ -575,7 +575,11 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.start_master_sel_shift_val           = 4,
 		.fatal_err_mask                       = 0x7,
 		.non_fatal_err_mask                   = 0x10080000,
-		.camif_irq_mask                       = 0x800000,
+		.sof_irq_mask                         = 0x10,
+		.rup_irq_mask                         = 0x800000,
+		.epoch0_irq_mask                      = 0x200000,
+		.epoch1_irq_mask                      = 0x400000,
+		.eof_irq_mask                         = 0x8,
 		.rup_aup_mask                         = 0x10001,
 		.top_irq_mask                         = 0x10,
 };
@@ -663,7 +667,11 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.ccif_violation_en                   = 1,
 		.fatal_err_mask                      = 0x5,
 		.non_fatal_err_mask                  = 0x10080000,
-		.camif_irq_mask                      = 0x800000,
+		.sof_irq_mask                         = 0x10,
+		.rup_irq_mask                         = 0x800000,
+		.epoch0_irq_mask                      = 0x200000,
+		.epoch1_irq_mask                      = 0x400000,
+		.eof_irq_mask                         = 0x8,
 		.rup_aup_mask                        = 0x100010,
 		.top_irq_mask                        = 0x100,
 };
@@ -751,7 +759,11 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.ccif_violation_en                   = 1,
 		.fatal_err_mask                      = 0x5,
 		.non_fatal_err_mask                  = 0x10080000,
-		.camif_irq_mask                      = 0x800000,
+		.sof_irq_mask                         = 0x10,
+		.rup_irq_mask                         = 0x800000,
+		.epoch0_irq_mask                      = 0x200000,
+		.epoch1_irq_mask                      = 0x400000,
+		.eof_irq_mask                         = 0x8,
 		.rup_aup_mask                        = 0x200020,
 		.top_irq_mask                        = 0x200,
 };
@@ -839,7 +851,11 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.ccif_violation_en                   = 1,
 		.fatal_err_mask                      = 0x5,
 		.non_fatal_err_mask                  = 0x10080000,
-		.camif_irq_mask                      = 0x800000,
+		.sof_irq_mask                         = 0x10,
+		.rup_irq_mask                         = 0x800000,
+		.epoch0_irq_mask                      = 0x200000,
+		.epoch1_irq_mask                      = 0x400000,
+		.eof_irq_mask                         = 0x8,
 		.rup_aup_mask                        = 0x400040,
 		.top_irq_mask                        = 0x400,
 };
@@ -927,7 +943,11 @@ static struct cam_ife_csid_ver2_path_reg_info
 		.ccif_violation_en                   = 1,
 		.fatal_err_mask                      = 0x5,
 		.non_fatal_err_mask                  = 0x10080000,
-		.camif_irq_mask                      = 0x800000,
+		.sof_irq_mask                         = 0x10,
+		.rup_irq_mask                         = 0x800000,
+		.epoch0_irq_mask                      = 0x200000,
+		.epoch1_irq_mask                      = 0x400000,
+		.eof_irq_mask                         = 0x8,
 		.rup_aup_mask                        = 0x800080,
 		.top_irq_mask                        = 0x800,
 };

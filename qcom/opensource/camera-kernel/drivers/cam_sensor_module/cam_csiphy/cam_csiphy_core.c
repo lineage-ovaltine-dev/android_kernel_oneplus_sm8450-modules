@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -734,6 +734,7 @@ int32_t cam_cmd_buf_parser(struct csiphy_device *csiphy_dev,
 	index = cam_csiphy_get_instance_offset(csiphy_dev, cfg_dev->dev_handle);
 	if (index < 0 || index  >= csiphy_dev->session_max_device_support) {
 		CAM_ERR(CAM_CSIPHY, "index in invalid: %d", index);
+		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		return -EINVAL;
 	}
 
@@ -743,6 +744,7 @@ int32_t cam_cmd_buf_parser(struct csiphy_device *csiphy_dev,
 		CAM_ERR(CAM_CSIPHY,
 			"Wrong configuration lane_cnt: %u",
 			cam_cmd_csiphy_info->lane_cnt);
+		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		return rc;
 	}
 
@@ -753,6 +755,7 @@ int32_t cam_cmd_buf_parser(struct csiphy_device *csiphy_dev,
 			CAM_ERR(CAM_CSIPHY,
 				"Wrong Datarate Configuration: %llu",
 				cam_cmd_csiphy_info->data_rate);
+			cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 			return rc;
 		}
 	}
@@ -771,6 +774,7 @@ int32_t cam_cmd_buf_parser(struct csiphy_device *csiphy_dev,
 			"Cannot support %s combo mode with differnt preamble settings",
 			(csiphy_dev->csiphy_info[index].csiphy_3phase ?
 			"CPHY" : "DPHY"));
+		cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 		return -EINVAL;
 	}
 
@@ -833,11 +837,14 @@ int32_t cam_cmd_buf_parser(struct csiphy_device *csiphy_dev,
 		csiphy_dev->csiphy_info[index].settle_time,
 		csiphy_dev->csiphy_info[index].data_rate);
 
+	cam_mem_put_cpu_buf(cmd_desc->mem_handle);
+	cam_mem_put_cpu_buf(cfg_dev->packet_handle);
 	return rc;
 
 reset_settings:
 	cam_csiphy_reset_phyconfig_param(csiphy_dev, index);
-
+	cam_mem_put_cpu_buf(cfg_dev->packet_handle);
+	cam_mem_put_cpu_buf(cmd_desc->mem_handle);
 	return rc;
 }
 
@@ -955,9 +962,6 @@ static int cam_csiphy_cphy_data_rate_config(
 	uint32_t reg_addr = 0, reg_data = 0, reg_param_type = 0;
 	uint8_t  skew_cal_enable = 0;
 	int32_t  delay = 0;
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-	uint64_t supported_min_phy_bw = 0;
-#endif
 
 	if ((csiphy_device == NULL) || (csiphy_device->ctrl_reg == NULL)) {
 		CAM_ERR(CAM_CSIPHY, "Device is NULL");
@@ -997,13 +1001,6 @@ static int cam_csiphy_cphy_data_rate_config(
 
 		CAM_DBG(CAM_CSIPHY, "table[%d] BW : %llu Selected",
 			data_rate_idx, supported_phy_bw);
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-		supported_min_phy_bw = data_rate_idx > 0 ? drate_settings[data_rate_idx-1].bandwidth : 0;
-		/* ((data+_rate GSpS) * (10^9) * (2.28 bits/symbol)) rounded value*/
-		CAM_INFO(CAM_CSIPHY, "The selected setting's mipi data rate is between %llu~%llu MSpS",
-			supported_min_phy_bw/2280000, supported_phy_bw/2280000);
-#endif
-
 		lane_enable = csiphy_device->csiphy_info[idx].lane_enable;
 		lane_assign = csiphy_device->csiphy_info[idx].lane_assign;
 		lane_idx = -1;

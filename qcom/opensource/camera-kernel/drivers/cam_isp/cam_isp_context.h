@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
+ * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_ISP_CONTEXT_H_
@@ -57,6 +58,9 @@
 
 /* AEB error count threshold */
 #define CAM_ISP_CONTEXT_AEB_ERROR_CNT_MAX 3
+
+/* Debug Buffer length*/
+#define CAM_ISP_CONTEXT_DBG_BUF_LEN 300
 
 /* forward declaration */
 struct cam_isp_context;
@@ -217,9 +221,6 @@ struct cam_isp_context_state_monitor {
 
 struct cam_isp_context_req_id_info {
 	int64_t                          last_bufdone_req_id;
-#ifdef OPLUS_FEATURE_CAMERA_COMMON //lanhe todo:
-	uint64_t                         last_rdi_req_id;
-#endif
 };
 
 /**
@@ -290,13 +291,13 @@ struct cam_isp_context_event_record {
  * @v4l2_event_sub_ids         contains individual bits representing subscribed v4l2 ids
  * @aeb_enabled:               Indicate if stream is for AEB
  * @do_internal_recovery:      Enable KMD halt/reset/resume internal recovery
+ * @vfe_bus_comp_grp:          Vfe bus comp group record
+ * @sfe_bus_comp_grp:          Sfe bus comp group record
  *
  */
 struct cam_isp_context {
 	struct cam_context              *base;
-#ifdef OPLUS_FEATURE_CAMERA_COMMON //lanhe todo:
-	uint64_t                          rdi_frame_id;
-#endif
+
 	uint64_t                         frame_id;
 	uint32_t                         frame_id_meta;
 	uint32_t                         substate_activated;
@@ -347,6 +348,8 @@ struct cam_isp_context {
 	uint32_t                              v4l2_event_sub_ids;
 	bool                                  aeb_enabled;
 	bool                                  do_internal_recovery;
+	struct cam_isp_hw_comp_record        *vfe_bus_comp_grp;
+	struct cam_isp_hw_comp_record        *sfe_bus_comp_grp;
 };
 
 /**
