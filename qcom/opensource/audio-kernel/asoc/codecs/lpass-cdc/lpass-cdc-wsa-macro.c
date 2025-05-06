@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2018-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/module.h>
@@ -31,6 +31,8 @@
 			SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000)
 #define LPASS_CDC_WSA_MACRO_RX_MIX_RATES (SNDRV_PCM_RATE_48000 |\
 			SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000)
+#define LPASS_CDC_WSA_MACRO_VI_RATES (SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_16000 |\
+			SNDRV_PCM_RATE_32000 | SNDRV_PCM_RATE_48000)
 #define LPASS_CDC_WSA_MACRO_RX_FORMATS (SNDRV_PCM_FMTBIT_S16_LE |\
 		SNDRV_PCM_FMTBIT_S24_LE |\
 		SNDRV_PCM_FMTBIT_S24_3LE | SNDRV_PCM_FMTBIT_S32_LE)
@@ -130,6 +132,8 @@ enum {
 	WSA_MODE_12DB,
 	WSA_MODE_10P5DB,
 	WSA_MODE_9DB,
+	WSA881X_MODE_18DB,
+	WSA881x_MODE_13P5DB,
 	WSA_MODE_MAX
 };
 
@@ -144,6 +148,8 @@ static struct lpass_cdc_comp_setting comp_setting_table[WSA_MODE_MAX] =
 	{24, 0, 42},
 	{21, 0, 42},
 	{18, 0, 42},
+	{36, 0, 36},
+	{27, 0, 36},
 };
 
 struct interp_sample_rate {
@@ -332,7 +338,8 @@ static const char *const lpass_cdc_wsa_macro_ear_spkrrecv_text[] = {
 
 static const char * const lpass_cdc_wsa_macro_comp_mode_text[] = {
 	"G_21_DB", "G_19P5_DB", "G_18_DB", "G_16P5_DB", "G_15_DB",
-	"G_13P5_DB", "G_12_DB", "G_10P5_DB", "G_9_DB"
+	"G_13P5_DB", "G_12_DB", "G_10P5_DB", "G_9_DB",
+	"WSA881X_G_18DB", "WSA881x_G_13P5DB"
 };
 
 static const struct snd_kcontrol_new wsa_int0_vbat_mix_switch[] = {
@@ -468,7 +475,7 @@ static struct snd_soc_dai_driver lpass_cdc_wsa_macro_dai[] = {
 		.id = LPASS_CDC_WSA_MACRO_AIF_VI,
 		.capture = {
 			.stream_name = "WSA_AIF_VI Capture",
-			.rates = SNDRV_PCM_RATE_8000 | SNDRV_PCM_RATE_48000,
+			.rates = LPASS_CDC_WSA_MACRO_VI_RATES,
 			.formats = LPASS_CDC_WSA_MACRO_RX_FORMATS,
 			.rate_max = 48000,
 			.rate_min = 8000,

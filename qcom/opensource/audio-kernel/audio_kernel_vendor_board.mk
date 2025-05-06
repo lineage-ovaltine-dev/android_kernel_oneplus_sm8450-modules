@@ -31,6 +31,7 @@ BOARD_VENDOR_KERNEL_MODULES += $(KERNEL_MODULES_OUT)/q6_notifier_dlkm.ko\
 	$(KERNEL_MODULES_OUT)/wcd9xxx_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/swr_haptics_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/stub_dlkm.ko \
+	$(KERNEL_MODULES_OUT)/wsa881x_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/machine_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/lpass_cdc_wsa2_macro_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/lpass_cdc_wsa_macro_dlkm.ko \
@@ -44,11 +45,6 @@ BOARD_VENDOR_KERNEL_MODULES += $(KERNEL_MODULES_OUT)/q6_notifier_dlkm.ko\
 	$(KERNEL_MODULES_OUT)/wcd937x_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/wcd937x_slave_dlkm.ko \
 	$(KERNEL_MODULES_OUT)/hdmi_dlkm.ko
-
 endif
 endif
 endif
-
-#ifdef OPLUS_ARCH_EXTENDS
--include $(TOP)/vendor/qcom/opensource/audio-kernel/oplus/oplus_audio_kernel_vendor_board.mk
-#endif /* OPLUS_ARCH_EXTENDS */
