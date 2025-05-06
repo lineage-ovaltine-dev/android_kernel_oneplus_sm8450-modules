@@ -42,6 +42,9 @@
 #include "sde_power_handle.h"
 #include "sde_irq.h"
 #include "sde_core_perf.h"
+#ifdef OPLUS_FEATURE_DISPLAY
+#include <soc/oplus/system/oplus_project.h>
+#endif /* OPLUS_FEATURE_DISPLAY */
 
 #define DRMID(x) ((x) ? (x)->base.id : -1)
 
@@ -49,37 +52,19 @@
  * SDE_DEBUG - macro for kms/plane/crtc/encoder/connector logs
  * @fmt: Pointer to format string
  */
-#define SDE_DEBUG(fmt, ...)                                                \
-	do {                                                               \
-		if (drm_debug_enabled(DRM_UT_KMS))                      \
-			DRM_DEBUG(fmt, ##__VA_ARGS__); \
-		else                                                       \
-			pr_debug(fmt, ##__VA_ARGS__);                      \
-	} while (0)
+#define SDE_DEBUG(fmt, ...) pr_debug(fmt, ##__VA_ARGS__)
 
 /**
  * SDE_INFO - macro for kms/plane/crtc/encoder/connector logs
  * @fmt: Pointer to format string
  */
-#define SDE_INFO(fmt, ...)                                                \
-	do {                                                               \
-		if (drm_debug_enabled(DRM_UT_KMS))                      \
-			DRM_INFO(fmt, ##__VA_ARGS__); \
-		else                                                       \
-			pr_info(fmt, ##__VA_ARGS__);                      \
-	} while (0)
+#define SDE_INFO(fmt, ...) pr_debug(fmt, ##__VA_ARGS__)
 
 /**
  * SDE_DEBUG_DRIVER - macro for hardware driver logging
  * @fmt: Pointer to format string
  */
-#define SDE_DEBUG_DRIVER(fmt, ...)                                         \
-	do {                                                               \
-		if (drm_debug_enabled(DRM_UT_DRIVER))                   \
-			DRM_ERROR(fmt, ##__VA_ARGS__); \
-		else                                                       \
-			pr_debug(fmt, ##__VA_ARGS__);                      \
-	} while (0)
+#define SDE_DEBUG_DRIVER(fmt, ...) pr_debug(fmt, ##__VA_ARGS__)
 
 #define SDE_ERROR(fmt, ...) pr_err("[sde error]" fmt, ##__VA_ARGS__)
 
@@ -484,11 +469,11 @@ void *sde_debugfs_get_root(struct sde_kms *sde_kms);
  * These functions/definitions allow for building up a 'sde_info' structure
  * containing one or more "key=value\n" entries.
  */
-#if IS_ENABLED(CONFIG_DRM_LOW_MSM_MEM_FOOTPRINT)
-#define SDE_KMS_INFO_MAX_SIZE	(1 << 12)
-#else
-#define SDE_KMS_INFO_MAX_SIZE	(1 << 14)
-#endif
+#ifdef OPLUS_FEATURE_DISPLAY
+#define SDE_KMS_INFO_MAX_SIZE	8192
+#else /* OPLUS_FEATURE_DISPLAY */
+#define SDE_KMS_INFO_MAX_SIZE	4096
+#endif /* OPLUS_FEATURE_DISPLAY */
 
 /**
  * struct sde_kms_info - connector information structure container
