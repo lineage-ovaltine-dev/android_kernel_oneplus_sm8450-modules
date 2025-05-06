@@ -547,7 +547,6 @@ static int gpr_probe(struct rpmsg_device *rpdev)
 	}
 
 	gpr_priv->wsource = wakeup_source_register(gpr_priv->dev, "audio-gpr");
-
 	dev_info(dev, "%s: gpr-lite probe success\n",
 		__func__);
 
