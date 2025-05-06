@@ -17,9 +17,6 @@
 
 #include "msm_drv.h"
 #include "msm_mmu.h"
-#if IS_ENABLED(CONFIG_OPLUS_FEATURE_THEIA)
-#include <soc/oplus/dfr/theia_send_event.h> /* for theia_send_event etc */
-#endif
 
 struct msm_iommu {
 	struct msm_mmu base;
@@ -34,7 +31,6 @@ static int msm_fault_handler(struct iommu_domain *domain, struct device *dev,
 	if (iommu->base.handler)
 		return iommu->base.handler(iommu->base.arg, iova, flags);
 	pr_warn_ratelimited("*** fault: iova=%08lx, flags=%d\n", iova, flags);
-
 	return 0;
 }
 

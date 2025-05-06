@@ -12,9 +12,6 @@
 #include "sde_hw_pingpong.h"
 #include "sde_dbg.h"
 #include "sde_kms.h"
-#if defined(CONFIG_PXLW_IRIS)
-#include "dsi_iris_api.h"
-#endif
 
 #define PP_TEAR_CHECK_EN                0x000
 #define PP_SYNC_CONFIG_VSYNC            0x004
@@ -334,11 +331,6 @@ static int sde_hw_pp_setup_dither(struct sde_hw_pingpong *pp,
 		return -EINVAL;
 
 	offset += 4;
-
-#if defined(CONFIG_PXLW_IRIS)
-	iris_sde_update_dither_depth_map(dither_depth_map, DITHER_DEPTH_MAP_INDEX);
-#endif
-
 	data = dither_depth_map[dither->c0_bitdepth] & REG_MASK(2);
 	data |= (dither_depth_map[dither->c1_bitdepth] & REG_MASK(2)) << 2;
 	data |= (dither_depth_map[dither->c2_bitdepth] & REG_MASK(2)) << 4;
@@ -400,7 +392,7 @@ static int sde_hw_pp_connect_external_te(struct sde_hw_pingpong *pp,
 }
 
 static int sde_hw_pp_get_vsync_info(struct sde_hw_pingpong *pp,
-		struct sde_hw_pp_vsync_info *info, int rw)
+		struct sde_hw_pp_vsync_info *info)
 {
 	struct sde_hw_blk_reg_map *c;
 	u32 val;
@@ -409,17 +401,15 @@ static int sde_hw_pp_get_vsync_info(struct sde_hw_pingpong *pp,
 		return -EINVAL;
 	c = &pp->hw;
 
-	if (rw == READ) {
-		val = SDE_REG_READ(c, PP_VSYNC_INIT_VAL);
-		info->rd_ptr_init_val = val & 0xffff;
+	val = SDE_REG_READ(c, PP_VSYNC_INIT_VAL);
+	info->rd_ptr_init_val = val & 0xffff;
 
-		val = SDE_REG_READ(c, PP_INT_COUNT_VAL);
-		info->rd_ptr_frame_count = (val & 0xffff0000) >> 16;
-		info->rd_ptr_line_count = val & 0xffff;
-	} else {
-		val = SDE_REG_READ(c, PP_LINE_COUNT);
-		info->wr_ptr_line_count = val & 0xffff;
-	}
+	val = SDE_REG_READ(c, PP_INT_COUNT_VAL);
+	info->rd_ptr_frame_count = (val & 0xffff0000) >> 16;
+	info->rd_ptr_line_count = val & 0xffff;
+
+	val = SDE_REG_READ(c, PP_LINE_COUNT);
+	info->wr_ptr_line_count = val & 0xffff;
 
 	return 0;
 }
