@@ -1089,7 +1089,6 @@ int sensor_start_thread(void *arg)
 		CAM_ERR(CAM_SENSOR, "s_ctrl is NULL");
 		return -1;
 	}
-	trace_begin("%s %d do sensor power up and write initsetting",s_ctrl->sensor_name, s_ctrl->sensordata->slave_info.sensor_id);
 
 	mutex_lock(&(s_ctrl->cam_sensor_mutex));
 
@@ -1387,7 +1386,6 @@ int sensor_start_thread(void *arg)
 	}
 
 	mutex_unlock(&(s_ctrl->cam_sensor_mutex));
-	trace_end();
 	return rc;
 }
 
