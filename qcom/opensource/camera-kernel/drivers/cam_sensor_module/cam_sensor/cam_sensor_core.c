@@ -963,7 +963,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 	struct cam_sensor_power_ctrl_t *power_info = NULL;
 	struct timespec64 ts;
 	uint64_t ms, sec, min, hrs;
-	char trace[64] = {0};
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
   int32_t sensor_temp;
 #endif
@@ -1439,13 +1438,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 			goto release_mutex;
 		}
 
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-		trace_begin("%s sensor_stream_on", s_ctrl->sensor_name);
-		memset(trace, 0, sizeof(trace));
-		snprintf(trace, sizeof(trace), "6 StreamOn %s", s_ctrl->sensor_name);
-		trace_int(trace, 1);
-#endif
-
 		if (s_ctrl->i2c_data.streamon_settings.is_settings_valid &&
 			(s_ctrl->i2c_data.streamon_settings.request_id == 0)) {
 			rc = cam_sensor_apply_settings(s_ctrl, 0,
@@ -1454,19 +1446,11 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				CAM_ERR(CAM_SENSOR,
 					"cannot apply streamon settings for %s",
 					s_ctrl->sensor_name);
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-				trace_end();
-				trace_int(trace, 0);
-#endif
 				goto release_mutex;
 			}
 		}
 		s_ctrl->sensor_state = CAM_SENSOR_START;
 
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-		trace_end();
-		trace_int(trace, 0);
-#endif
 
 		if (s_ctrl->bridge_intf.crm_cb &&
 			s_ctrl->bridge_intf.crm_cb->notify_timer) {
@@ -1506,10 +1490,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 		{
 			cam_get_second_provison_vendor_id(s_ctrl);
 		}
-		trace_begin("%s sensor_stream_off", s_ctrl->sensor_name);
-		memset(trace, 0, sizeof(trace));
-		snprintf(trace, sizeof(trace), "6 StreamOff %s", s_ctrl->sensor_name);
-		trace_int(trace, 1);
 #endif
 
 		if (s_ctrl->i2c_data.streamoff_settings.is_settings_valid &&
@@ -1522,11 +1502,6 @@ int32_t cam_sensor_driver_cmd(struct cam_sensor_ctrl_t *s_ctrl,
 				s_ctrl->sensor_name);
 			}
 		}
-
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-		trace_end();
-		trace_int(trace, 0);
-#endif
 
 		cam_sensor_release_per_frame_resource(s_ctrl);
 		s_ctrl->last_flush_req = 0;
@@ -1834,7 +1809,6 @@ int cam_sensor_power_up(struct cam_sensor_ctrl_t *s_ctrl)
 		}
 	}
 
-	trace_begin("%d_%d_0x%x aon user", s_ctrl->cci_num, s_ctrl->cci_i2c_master, s_ctrl->sensordata->slave_info.sensor_id);
 	if (s_ctrl->is_aon_user) {
 		CAM_INFO(CAM_SENSOR,
 			"Setup for Main Camera with csiphy index: %d",
@@ -1845,29 +1819,21 @@ int cam_sensor_power_up(struct cam_sensor_ctrl_t *s_ctrl)
 			CAM_ERR(CAM_SENSOR,
 				"Main camera access operation is not successful rc: %d",
 				rc);
-			trace_end();
 			return rc;
 		}
 	}
-	trace_end();
 
-	trace_begin("%d_%d_0x%x Power Up", s_ctrl->cci_num, s_ctrl->cci_i2c_master, s_ctrl->sensordata->slave_info.sensor_id);
 	rc = cam_sensor_core_power_up(power_info, soc_info);
 	if (rc < 0) {
 		CAM_ERR(CAM_SENSOR, "core power up failed:%d", rc);
-		trace_end();
 		return rc;
 	}
-	trace_end();
 
-	trace_begin("%d_%d_0x%x Init", s_ctrl->cci_num, s_ctrl->cci_i2c_master, s_ctrl->sensordata->slave_info.sensor_id);
 	rc = camera_io_init(&(s_ctrl->io_master_info));
 	if (rc < 0) {
 		CAM_ERR(CAM_SENSOR, "cci_init failed: rc: %d", rc);
-		trace_end();
 		goto cci_failure;
 	}
-	trace_end();
 
 	return rc;
 
@@ -2091,7 +2057,6 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 			return 0;
 		}
 		if (i2c_set->is_settings_valid == 1) {
-			trace_begin("%d_%d_0x%x Apply Setting %d", s_ctrl->cci_num, s_ctrl->cci_i2c_master, s_ctrl->sensordata->slave_info.sensor_id, opcode);
 			list_for_each_entry(i2c_list,
 				&(i2c_set->list_head), list) {
 				if (!s_ctrl->hw_no_ops)
@@ -2118,11 +2083,9 @@ int cam_sensor_apply_settings(struct cam_sensor_ctrl_t *s_ctrl,
 					CAM_ERR(CAM_SENSOR,
 						"Failed to apply settings: %d",
 						rc);
-					trace_end();
 					return rc;
 				}
 			}
-			trace_end();
 		}
 	} else if (req_id > 0) {
 		offset = req_id % MAX_PER_FRAME_ARRAY;

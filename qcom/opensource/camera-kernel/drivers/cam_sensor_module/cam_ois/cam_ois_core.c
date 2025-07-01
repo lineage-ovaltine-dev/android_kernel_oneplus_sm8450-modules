@@ -903,7 +903,6 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 			}
 		}
 
-		trace_begin("%d_%d_%s Download FW", o_ctrl->cci_num, o_ctrl->cci_i2c_master, o_ctrl->ois_name);
 		CAM_ERR(CAM_OIS,"%d_%d_%s %s Download FW ", o_ctrl->cci_num, o_ctrl->cci_i2c_master, o_ctrl->ois_name,o_ctrl->ois_fw_flag?"start":"don't");
 		if (o_ctrl->ois_fw_flag) {
 			CAM_ERR(CAM_OIS, "read ois_name %s", o_ctrl->ois_name);
@@ -955,11 +954,9 @@ static int cam_ois_pkt_parse(struct cam_ois_ctrl_t *o_ctrl, void *arg)
 
 			if (rc) {
 				CAM_ERR(CAM_OIS, "Failed OIS FW Download");
-				trace_end();
 				goto pwr_dwn;
 			}
 		}
-		trace_end();
 
 		rc = cam_ois_apply_settings(o_ctrl, &o_ctrl->i2c_init_data);
 		if ((rc == -EAGAIN) &&
