@@ -333,6 +333,7 @@ static int cam_unsubscribe_event(struct v4l2_fh *fh,
 	return v4l2_event_unsubscribe(fh, sub);
 }
 
+extern pid_t camera_provider_pid;
 static long cam_private_ioctl(struct file *file, void *fh,
 	bool valid_prio, unsigned int cmd, void *arg)
 {
@@ -341,6 +342,8 @@ static long cam_private_ioctl(struct file *file, void *fh,
 
 	if ((!arg) || (cmd != VIDIOC_CAM_CONTROL))
 		return -EINVAL;
+
+        camera_provider_pid = task_tgid_nr(current);
 
 	k_ioctl = (struct cam_control *)arg;
 
