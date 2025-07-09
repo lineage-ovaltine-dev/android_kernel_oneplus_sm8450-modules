@@ -9,10 +9,6 @@
 #include "cam_common_util.h"
 #include <linux/sched/types.h>
 
-struct sched_param {
-	int sched_priority;
-};
-
 #define WORKQ_ACQUIRE_LOCK(workq, flags) {\
 	if ((workq)->in_irq) \
 		spin_lock_irqsave(&(workq)->lock_bh, (flags)); \
