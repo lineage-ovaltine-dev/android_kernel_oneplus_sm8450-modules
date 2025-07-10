@@ -12742,6 +12742,23 @@ static int cam_ife_hw_mgr_handle_csid_camif_sof(
 		break;
 	}
 end:
+#ifdef OPLUS_FEATURE_CAMERA_COMMON //lanhe todo:
+	if (ctx->flags.use_rdi_sof && (CAM_IFE_PIX_PATH_RES_RDI_2 == event_info->res_id))
+	{
+		struct cam_isp_hw_sof_event_data      sof_done_event_data;
+		ife_hw_irq_sof_cb = ctx->common.event_cb;
+		//sof_done_event_data.is_secondary_evt = false;
+		sof_done_event_data.boot_time = 0;
+		sof_done_event_data.timestamp = 0;
+		sof_done_event_data.res_id = CAM_ISP_HW_VFE_IN_RDI0;//for hack RDI SOF just for timestamp backup
+		ife_hw_irq_sof_cb(ctx->common.cb_priv,
+			CAM_ISP_HW_EVENT_SOF, (void *)&sof_done_event_data);
+		CAM_DBG(CAM_ISP,
+				"Received CSID RDI0 SOF res: %d as secondary evt",
+				event_info->res_id);
+		return 0;
+	}
+#endif
 	return rc;
 }
 
@@ -12773,25 +12790,6 @@ static int cam_ife_hw_mgr_handle_csid_camif_epoch(
 	case CAM_IFE_PIX_PATH_RES_RDI_0:
 	case CAM_IFE_PIX_PATH_RES_RDI_1:
 	case CAM_IFE_PIX_PATH_RES_RDI_2:
-#ifdef OPLUS_FEATURE_CAMERA_COMMON // lanhe todo:
-		if (ctx->flags.use_rdi_sof && (CAM_IFE_PIX_PATH_RES_RDI_2 == event_info->res_id))
-		{
-			struct cam_isp_hw_sof_event_data sof_done_event_data;
-			cam_hw_event_cb_func ife_hw_irq_sof_cb = ctx->common.event_cb; // Keep original var if preferred
-
-			sof_done_event_data.boot_time = 0; // Consider if actual boot time is needed
-			sof_done_event_data.timestamp = 0; // Consider if actual timestamp is needed
-			sof_done_event_data.res_id = CAM_ISP_HW_VFE_IN_RDI0;
-
-			ife_hw_irq_sof_cb(ctx->common.cb_priv,
-							  CAM_ISP_HW_EVENT_SOF, (void *)&sof_done_event_data);
-
-			CAM_DBG(CAM_ISP,
-					"Handled CSID RDI SOF (from Epoch IRQ) res: %d (using VFE_IN_RDI0 for ts)",
-					event_info->res_id);
-			return 0;
-		}
-#endif // OPLUS_FEATURE_CAMERA_COMMON
 	case CAM_IFE_PIX_PATH_RES_RDI_3:
 	case CAM_IFE_PIX_PATH_RES_RDI_4:
 	case CAM_IFE_PIX_PATH_RES_PPP:
@@ -12811,7 +12809,6 @@ static int cam_ife_hw_mgr_handle_csid_camif_epoch(
 		CAM_ERR_RATE_LIMIT(CAM_ISP, "Invalid res_id: %d", event_info->res_id);
 		break;
 	}
-
 end:
 	return rc;
 }
