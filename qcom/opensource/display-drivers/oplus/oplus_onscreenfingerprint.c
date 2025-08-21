@@ -1545,57 +1545,48 @@ bool oplus_ofp_backlight_filter(void *dsi_panel, unsigned int bl_level)
 		return false;
 	}
 
-	OPLUS_OFP_TRACE_BEGIN("oplus_ofp_backlight_filter");
-
 	hbm_enable = sde_connector_get_property(c_conn->base.state, CONNECTOR_PROP_HBM_ENABLE);
 
 	if (oplus_ofp_get_hbm_state()) {
 		if (!bl_level) {
 			p_oplus_ofp_params->hbm_mode = 0;
-			OFP_INFO("oplus_ofp_hbm_mode:%u\n", p_oplus_ofp_params->hbm_mode);
-			OPLUS_OFP_TRACE_INT("oplus_ofp_hbm_mode", p_oplus_ofp_params->hbm_mode);
+			OFP_DEBUG("oplus_ofp_hbm_mode:%u\n", p_oplus_ofp_params->hbm_mode);
 			oplus_ofp_set_hbm_state(false);
 			OFP_DEBUG("backlight is 0, set hbm mode and hbm state to false\n");
 
 			if (p_oplus_ofp_params->aod_unlocking) {
 				p_oplus_ofp_params->aod_unlocking = false;
-				OFP_INFO("oplus_ofp_aod_unlocking:%d\n", p_oplus_ofp_params->aod_unlocking);
-				OPLUS_OFP_TRACE_INT("oplus_ofp_aod_unlocking", p_oplus_ofp_params->aod_unlocking);
+				OFP_DEBUG("oplus_ofp_aod_unlocking:%d\n", p_oplus_ofp_params->aod_unlocking);
 			}
 
 			need_filter_backlight = false;
 		} else {
-			OFP_INFO("hbm state is true, filter backlight %u setting\n", bl_level);
+			OFP_DEBUG("hbm state is true, filter backlight %u setting\n", bl_level);
 			need_filter_backlight = true;
 		}
 	} else if (p_oplus_ofp_params->aod_unlocking && p_oplus_ofp_params->fp_press && bl_level) {
-		OFP_INFO("aod unlocking is true, filter backlight %u setting\n", bl_level);
+		OFP_DEBUG("aod unlocking is true, filter backlight %u setting\n", bl_level);
 		need_filter_backlight = true;
 	} else if (!p_oplus_ofp_params->aod_unlocking && !p_oplus_ofp_params->doze_active
 					&& (hbm_enable & OPLUS_OFP_PROPERTY_DIM_LAYER) && bl_level
 					&& panel->cur_mode->priv_info->oplus_ofp_need_to_separate_backlight
 					&& oplus_last_backlight) {
 		/* backlight will affect hbm on time in some panel, need to separate the 51 cmd for stable hbm on time */
-		OFP_INFO("dim layer exist, filter backlight %u setting in advance\n", bl_level);
+		OFP_DEBUG("dim layer exist, filter backlight %u setting in advance\n", bl_level);
 		need_filter_backlight = true;
 	} else if (oplus_ofp_get_aod_state()) {
-		OFP_INFO("aod state is true, filter backlight %u setting\n", bl_level);
+		OFP_DEBUG("aod state is true, filter backlight %u setting\n", bl_level);
 		need_filter_backlight = true;
 	} else if (!oplus_ofp_get_aod_state() && (hbm_enable & OPLUS_OFP_PROPERTY_AOD_LAYER) && bl_level) {
-		OFP_INFO("aod layer exist, filter backlight %u setting\n", bl_level);
+		OFP_DEBUG("aod layer exist, filter backlight %u setting\n", bl_level);
 		need_filter_backlight = true;
 	} else if (p_oplus_ofp_params->dimlayer_hbm || hbm_enable) {
-		OFP_INFO("backlight lvl:%u\n", bl_level);
+		OFP_DEBUG("backlight lvl:%u\n", bl_level);
 	}
 
 	if (hbm_enable != p_oplus_ofp_params->hbm_enable)
-		OFP_INFO("panel name = %s, is_secondary = %d, hbm_enable = %d, hbm_enable2 = %d\n",
+		OFP_DEBUG("panel name = %s, is_secondary = %d, hbm_enable = %d, hbm_enable2 = %d\n",
 				panel->name, panel->is_secondary, hbm_enable, p_oplus_ofp_params->hbm_enable);
-
-	OPLUS_OFP_TRACE_END("oplus_ofp_backlight_filter");
-
-	OFP_DEBUG("end\n");
-
 	return need_filter_backlight;
 }
 
