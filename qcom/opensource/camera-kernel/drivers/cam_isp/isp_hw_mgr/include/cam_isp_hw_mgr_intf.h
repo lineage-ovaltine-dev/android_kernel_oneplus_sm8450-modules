@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2016-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_ISP_HW_MGR_INTF_H_
@@ -12,22 +12,19 @@
 #include <linux/list.h>
 #include <media/cam_isp.h>
 #include "cam_hw_mgr_intf.h"
-#include "cam_packet_util.h"
 
 /* MAX IFE instance */
-#define CAM_IFE_HW_NUM_MAX               8
-#define CAM_SFE_HW_NUM_MAX               2
-#define CAM_IFE_RDI_NUM_MAX              4
-#define CAM_SFE_RDI_NUM_MAX              5
-#define CAM_SFE_FE_RDI_NUM_MAX           3
-#define CAM_ISP_BW_CONFIG_V1             1
-#define CAM_ISP_BW_CONFIG_V2             2
-#define CAM_TFE_HW_NUM_MAX               3
-#define CAM_TFE_RDI_NUM_MAX              3
-#define CAM_IFE_SCRATCH_NUM_MAX          2
-#define CAM_ISP_BUS_COMP_NUM_MAX         18
-#define CAM_SFE_BUS_COMP_NUM_MAX         12
-#define CAM_TFE_BW_LIMITER_CONFIG_V1     1
+#define CAM_IFE_HW_NUM_MAX       8
+#define CAM_SFE_HW_NUM_MAX       2
+#define CAM_IFE_RDI_NUM_MAX      4
+#define CAM_SFE_RDI_NUM_MAX      5
+#define CAM_SFE_FE_RDI_NUM_MAX   3
+#define CAM_ISP_BW_CONFIG_V1     1
+#define CAM_ISP_BW_CONFIG_V2     2
+#define CAM_TFE_HW_NUM_MAX       3
+#define CAM_TFE_RDI_NUM_MAX      3
+#define CAM_IFE_SCRATCH_NUM_MAX  2
+
 
 /* maximum context numbers for TFE */
 #define CAM_TFE_CTX_MAX      4
@@ -246,7 +243,6 @@ struct cam_isp_bw_clk_config_info {
  * @reg_dump_buf_desc:     cmd buffer descriptors for reg dump
  * @num_reg_dump_buf:      Count of descriptors in reg_dump_buf_desc
  * @packet:                CSL packet from user mode driver
- * @kmd_cmd_buff_info:         reference to kmd buffer
  * @mup_val:               MUP value if configured
  * @num_exp:               Num of exposures
  * @mup_en:                Flag if dynamic sensor switch is enabled
@@ -263,40 +259,11 @@ struct cam_isp_prepare_hw_update_data {
 						CAM_REG_DUMP_MAX_BUF_ENTRIES];
 	uint32_t                              num_reg_dump_buf;
 	struct cam_packet                    *packet;
-	struct cam_kmd_buf_info               kmd_cmd_buff_info;
 	uint32_t                              mup_val;
 	uint32_t                              num_exp;
 	bool                                  mup_en;
 };
 
-/**
- * struct cam_isp_hw_comp_record:
- *
- * @brief:              Structure record the res id reserved on a comp group
- *
- * @num_res:            Number of valid resource IDs in this record
- * @res_id:             Resource IDs to report buf dones
- * @last_consumed_addr: Last consumed addr for resource ID at that index
- *
- */
-struct cam_isp_hw_comp_record {
-	uint32_t num_res;
-	uint32_t res_id[CAM_NUM_OUT_PER_COMP_IRQ_MAX];
-};
-
-/**
- * struct cam_isp_comp_record_query:
- *
- * @brief:              Structure record the bus comp group pointer information
- *
- * @isp_bus_comp_grp:   Vfe/Tfe bus comp group pointer
- * @sfe_bus_comp_grp:   Sfe bus comp group pointer
- *
- */
-struct cam_isp_comp_record_query {
-	struct cam_isp_hw_comp_record        *isp_bus_comp_grp;
-	struct cam_isp_hw_comp_record        *sfe_bus_comp_grp;
-};
 
 /**
  * struct cam_isp_hw_sof_event_data - Event payload for CAM_HW_EVENT_SOF
@@ -338,19 +305,19 @@ struct cam_isp_hw_epoch_event_data {
 /**
  * struct cam_isp_hw_done_event_data - Event payload for CAM_HW_EVENT_DONE
  *
- * @hw_type:             Hw type sending the event
- * @resource_handle:     Resource handle
- * @comp_group_id:       Bus comp group id
- * @last_consumed_addr:  Last consumed addr
- * @timestamp:           Timestamp for the buf done event
+ * @num_handles:           Number of resource handeles
+ * @resource_handle:       Resource handle array
+ * @last_consumed_addr:    Last consumed addr
+ * @timestamp:             Timestamp for the buf done event
  *
  */
 struct cam_isp_hw_done_event_data {
-	uint32_t             hw_type;
-	uint32_t             resource_handle;
-	uint32_t             comp_group_id;
-	uint32_t             last_consumed_addr;
-	uint64_t             timestamp;
+	uint32_t             num_handles;
+	uint32_t             resource_handle[
+				CAM_NUM_OUT_PER_COMP_IRQ_MAX];
+	uint32_t             last_consumed_addr[
+				CAM_NUM_OUT_PER_COMP_IRQ_MAX];
+	uint64_t       timestamp;
 };
 
 /**
@@ -404,7 +371,6 @@ enum cam_isp_hw_mgr_command {
 	CAM_ISP_HW_MGR_GET_SOF_TS,
 	CAM_ISP_HW_MGR_DUMP_STREAM_INFO,
 	CAM_ISP_HW_MGR_CMD_UPDATE_CLOCK,
-	CAM_ISP_HW_MGR_GET_BUS_COMP_GROUP,
 	CAM_ISP_HW_MGR_CMD_MAX,
 };
 

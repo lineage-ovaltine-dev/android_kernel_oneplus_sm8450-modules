@@ -1,7 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_COMPAT_H_
@@ -64,7 +63,5 @@ int cam_req_mgr_ordered_list_cmp(void *priv,
 #ifdef OPLUS_FEATURE_CAMERA_COMMON
 void dev_defer_supplier_debug(void *drv_ptr);
 #endif
-
-int cam_get_subpart_info(uint32_t *part_info, uint32_t max_num_cam);
 
 #endif /* _CAM_COMPAT_H_ */

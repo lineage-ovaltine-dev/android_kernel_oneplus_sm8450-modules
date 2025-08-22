@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (c) 2014-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #include <linux/dma-mapping.h>
@@ -12,10 +11,6 @@
 #include "cam_debug_util.h"
 #include "cam_cpas_api.h"
 #include "camera_main.h"
-
-#if KERNEL_VERSION(5, 15, 0) <= LINUX_VERSION_CODE
-#include <soc/qcom/socinfo.h>
-#endif
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
 int cam_reserve_icp_fw(struct cam_fw_alloc_info *icp_fw, size_t fw_length)
@@ -62,15 +57,13 @@ int cam_ife_notify_safe_lut_scm(bool safe_trigger)
 	uint32_t camera_hw_version, rc = 0;
 
 	rc = cam_cpas_get_cpas_hw_version(&camera_hw_version);
-	if (!rc) {
+	if (!rc && qcom_scm_smmu_notify_secure_lut(smmu_se_ife, safe_trigger)) {
 		switch (camera_hw_version) {
 		case CAM_CPAS_TITAN_170_V100:
 		case CAM_CPAS_TITAN_170_V110:
 		case CAM_CPAS_TITAN_175_V100:
-			if (qcom_scm_smmu_notify_secure_lut(smmu_se_ife, safe_trigger)) {
-				CAM_ERR(CAM_ISP, "scm call to enable safe failed");
-				rc = -EINVAL;
-			}
+			CAM_ERR(CAM_ISP, "scm call to enable safe failed");
+			rc = -EINVAL;
 			break;
 		default:
 			break;
@@ -149,15 +142,13 @@ int cam_ife_notify_safe_lut_scm(bool safe_trigger)
 	};
 
 	rc = cam_cpas_get_cpas_hw_version(&camera_hw_version);
-	if (!rc) {
+	if (!rc && scm_call2(SCM_SIP_FNID(0x15, 0x3), &description)) {
 		switch (camera_hw_version) {
 		case CAM_CPAS_TITAN_170_V100:
 		case CAM_CPAS_TITAN_170_V110:
 		case CAM_CPAS_TITAN_175_V100:
-			if (scm_call2(SCM_SIP_FNID(0x15, 0x3), &description)) {
-				CAM_ERR(CAM_ISP, "scm call to enable safe failed");
-				rc = -EINVAL;
-			}
+			CAM_ERR(CAM_ISP, "scm call to enable safe failed");
+			rc = -EINVAL;
 			break;
 		default:
 			break;
@@ -442,36 +433,4 @@ void dev_defer_supplier_debug(void *drv_ptr)
 	put_device(match_dev);
 }
 #endif
-#endif
-
-#if KERNEL_VERSION(5, 15, 0) <= LINUX_VERSION_CODE
-int cam_get_subpart_info(uint32_t *part_info, uint32_t max_num_cam)
-{
-	int rc = 0;
-	int num_cam;
-
-	num_cam = socinfo_get_part_count(PART_CAMERA);
-	CAM_DBG(CAM_CPAS, "number of cameras: %d", num_cam);
-	if (num_cam != max_num_cam) {
-		CAM_ERR(CAM_CPAS, "Unsupported number of parts: %d", num_cam);
-		return -EINVAL;
-	}
-
-	/*
-	 * If bit value in part_info is "0" then HW is available.
-	 * If bit value in part_info is "1" then HW is unavailable.
-	 */
-	rc = socinfo_get_subpart_info(PART_CAMERA, part_info, num_cam);
-	if (rc) {
-		CAM_ERR(CAM_CPAS, "Failed while getting subpart_info, rc = %d.", rc);
-		return rc;
-	}
-
-	return 0;
-}
-#else
-int cam_get_subpart_info(uint32_t *part_info, uint32_t max_num_cam)
-{
-	return 0;
-}
 #endif

@@ -112,7 +112,6 @@ struct cam_ife_csid_ver2_top_cfg {
 
 struct cam_ife_csid_ver2_evt_payload {
 	struct list_head            list;
-	// uint32_t                    irq_reg_val[CAM_IFE_CSID_IRQ_REG_MAX];
 	uint32_t                    irq_reg_val;
 };
 

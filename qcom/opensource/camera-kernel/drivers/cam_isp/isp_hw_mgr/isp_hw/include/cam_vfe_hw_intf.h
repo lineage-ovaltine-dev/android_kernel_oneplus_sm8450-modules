@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2023, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_VFE_HW_INTF_H_
@@ -144,7 +144,6 @@ struct cam_vfe_hw_vfe_bus_rd_acquire_args {
  * @cdm_ops:                 CDM operations
  * @disable_ubwc_comp:       Disable UBWC compression
  * @use_wm_pack:             Use WM Packing
- * @comp_grp_id:             VFE bus comp group id
  */
 struct cam_vfe_hw_vfe_out_acquire_args {
 	struct cam_isp_resource_node         *rsrc_node;
@@ -157,7 +156,6 @@ struct cam_vfe_hw_vfe_out_acquire_args {
 	struct cam_cdm_utils_ops             *cdm_ops;
 	bool                                  disable_ubwc_comp;
 	bool                                  use_wm_pack;
-	uint32_t                              comp_grp_id;
 };
 
 /*
@@ -311,7 +309,6 @@ struct cam_vfe_top_irq_evt_payload {
  *                           handled
  * @error_type:              Identify different errors
  * @ts:                      Timestamp
- * @last_consumed_addr:      Last consumed addr for resource
  */
 struct cam_vfe_bus_irq_evt_payload {
 	struct list_head            list;
@@ -323,7 +320,6 @@ struct cam_vfe_bus_irq_evt_payload {
 	uint32_t                    evt_id;
 	uint32_t                    irq_reg_val[CAM_IFE_BUS_IRQ_REGISTERS_MAX];
 	struct cam_isp_timestamp    ts;
-	uint32_t                    last_consumed_addr;
 };
 
 /**
@@ -377,24 +373,6 @@ struct cam_vfe_generic_ubwc_config {
 	struct cam_vfe_generic_ubwc_plane_config
 		ubwc_plane_cfg[CAM_PACKET_MAX_PLANES - 1];
 };
-
-/*
- * cam_vfe_get_num_ifes()
- *
- * @brief:         Gets number of IFEs
- *
- * @num_ifes:      Fills number of IFES in the address passed
- */
-void cam_vfe_get_num_ifes(uint32_t *num_ifes);
-
-/*
- * cam_vfe_get_num_ife_lites()
- *
- * @brief:         Gets number of IFE-LITEs
- *
- * @num_ifes:      Fills number of IFE-LITES in the address passed
- */
-void cam_vfe_get_num_ife_lites(uint32_t *num_ife_lites);
 
 /*
  * cam_vfe_hw_init()

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (c) 2017-2021, The Linux Foundation. All rights reserved.
- * Copyright (c) 2022-2024, Qualcomm Innovation Center, Inc. All rights reserved.
+ * Copyright (c) 2022 Qualcomm Innovation Center, Inc. All rights reserved.
  */
 
 #ifndef _CAM_IFE_HW_MGR_H_
@@ -68,20 +68,6 @@ struct cam_ife_hw_mgr_debug {
 	bool           per_req_reg_dump;
 	bool           disable_ubwc_comp;
 	bool           disable_ife_mmu_prefetch;
-};
-
-/**
- * struct cam_cmd_buf_desc_addr_len
- *
- * brief:                       structure to store cpu addr and size of
- *                              reg dump descriptors
- * @cpu_addr:                   cpu addr of buffer
- * @size:                       size of the buffer
- */
-
-struct cam_cmd_buf_desc_addr_len {
-	uintptr_t cpu_addr;
-	size_t    buf_size;
 };
 
 /**
@@ -196,7 +182,6 @@ struct cam_ife_hw_mgr_ctx_scratch_buf_info {
  * @sys_cache_usage:     Per context sys cache usage
  *                       The corresponding index will be set
  *                       for the cache type
- * @skip_reg_dump_buf_put: Set if put_cpu_buf for reg dump buf is already called
  *
  */
 struct cam_ife_hw_mgr_ctx_flags {
@@ -218,7 +203,6 @@ struct cam_ife_hw_mgr_ctx_flags {
 	bool   is_aeb_mode;
 	bool   rdi_lcr_en;
 	bool   sys_cache_usage[CAM_LLCC_MAX];
-	bool   skip_reg_dump_buf_put;
 #ifdef OPLUS_FEATURE_CAMERA_COMMON//lanhe todo
 	bool   use_rdi_sof;
 #endif
@@ -276,8 +260,6 @@ struct cam_ife_cdm_user_data {
  * @config_done_complete    indicator for configuration complete
  * @reg_dump_buf_desc:      cmd buffer descriptors for reg dump
  * @num_reg_dump_buf:       Count of descriptors in reg_dump_buf_desc
- * @reg_dump_cmd_buf_addr_len	store cpu addr and size of
- *                          reg dump descriptors for flush/error cases
  * @applied_req_id:         Last request id to be applied
  * @ctx_type                Type of IFE ctx [CUSTOM/SFE etc.]
  * @ctx_config              ife ctx config  [bit field]
@@ -335,8 +317,6 @@ struct cam_ife_hw_mgr_ctx {
 	struct cam_cmd_buf_desc                    reg_dump_buf_desc[
 						CAM_REG_DUMP_MAX_BUF_ENTRIES];
 	uint32_t                                   num_reg_dump_buf;
-	struct cam_cmd_buf_desc_addr_len           reg_dump_cmd_buf_addr_len[
-						CAM_REG_DUMP_MAX_BUF_ENTRIES];
 	uint64_t                                   applied_req_id;
 	enum cam_ife_ctx_master_type               ctx_type;
 	uint32_t                                   ctx_config;
@@ -350,8 +330,6 @@ struct cam_ife_hw_mgr_ctx {
 	atomic_t                                   recovery_id;
 	uint32_t                                   current_mup;
 	uint32_t                                   curr_num_exp;
-	struct cam_isp_hw_comp_record             *vfe_bus_comp_grp;
-	struct cam_isp_hw_comp_record             *sfe_bus_comp_grp;
 };
 
 /**
