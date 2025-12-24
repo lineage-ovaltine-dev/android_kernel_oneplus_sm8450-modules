@@ -26,12 +26,12 @@ volatile static int pre_flash_mode;
 static ssize_t flash_on_off(struct cam_flash_ctrl *flash_ctrl)
 {
 	int rc = 1;
-	struct timespec ts;
+	struct timespec64 ts;
 	struct rtc_time tm;
 	struct cam_flash_frame_setting flash_data;
 	memset(&flash_data, 0, sizeof(flash_data));
 
-	getnstimeofday(&ts);
+	ktime_get_real_ts64(&ts);
 	rtc_time_to_tm(ts.tv_sec, &tm);
 	pr_info("flash_mode %d,%d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
 		flash_mode,
