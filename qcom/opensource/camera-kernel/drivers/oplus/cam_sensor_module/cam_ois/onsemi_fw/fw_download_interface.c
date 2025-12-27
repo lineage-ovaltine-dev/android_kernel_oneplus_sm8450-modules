@@ -6,6 +6,33 @@
 #include "BU24721/bu24721_fw.h"
 #include "SEM1217S/sem1217_fw.h"
 
+//for dx1 bringup
+#ifdef __KERNEL__
+#ifndef _STRUCT_TIMESPEC
+#define _STRUCT_TIMESPEC
+struct timespec {
+	__kernel_old_time_t	tv_sec;		/* seconds */
+	long			tv_nsec;	/* nanoseconds */
+};
+#endif
+
+struct timeval {
+	__kernel_old_time_t	tv_sec;		/* seconds */
+	__kernel_suseconds_t	tv_usec;	/* microseconds */
+};
+
+struct itimerspec {
+	struct timespec it_interval;/* timer period */
+	struct timespec it_value;	/* timer expiration */
+};
+
+struct itimerval {
+	struct timeval it_interval;/* timer interval */
+	struct timeval it_value;	/* current value */
+};
+#endif
+
+
 
 extern unsigned char SelectDownload(uint8_t GyroSelect,
 	uint8_t ActSelect,
